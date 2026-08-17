@@ -4,28 +4,20 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/src/lib/utils';
+import { NAV_LINKS } from '@/src/lib/constants'; // Import from constants
 
-
-const NAV_LINKS = [
-  { href: '/', label: 'Home' },
-  { href: '/about', label: 'About Us' },
-  { href: '/treatments', label: 'Treatments' },
-  { href: '/doctors', label: 'Doctors' },
-  { href: '/contact', label: 'Contact Us' },
-];
+// REMOVE this local definition
+// const NAV_LINKS = [
+//   { href: '/', label: 'Home' },
+//   { href: '/about', label: 'About Us' },
+//   { href: '/treatments', label: 'Treatments' },
+//   { href: '/doctors', label: 'Doctors' },
+//   { href: '/contact', label: 'Contact Us' },
+// ];
 
 export function HeaderClient() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);  // Remove isScrolled state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-
-  // REMOVE this useEffect completely
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     setIsScrolled(window.scrollY > 10);
-  //   };
-  //   window.addEventListener('scroll', handleScroll);
-  //   return () => window.removeEventListener('scroll', handleScroll);
-  // }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -37,12 +29,7 @@ export function HeaderClient() {
       <header
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-          // REMOVE the isScrolled condition - keep consistent padding
-          'bg-white py-4'  // Always use this padding
-          // OLD CODE (remove these lines):
-          // isScrolled
-          //   ? 'bg-white/95 backdrop-blur-md shadow-sm py-3'
-          //   : 'bg-white py-4'
+          'bg-white py-4'
         )}
       >
         <div className="container mx-auto px-4 max-w-7xl">
@@ -58,7 +45,7 @@ export function HeaderClient() {
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation - Using NAV_LINKS from constants */}
             <nav className="hidden lg:flex items-center gap-8">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
@@ -146,6 +133,7 @@ export function HeaderClient() {
               </button>
             </div>
 
+            {/* Mobile Navigation - Using NAV_LINKS from constants */}
             <nav className="flex flex-col gap-6">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
