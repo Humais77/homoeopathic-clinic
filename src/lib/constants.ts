@@ -42,3 +42,15 @@ export const WHY_HEAL_BY_NATURE = {
     },
   ],
 };
+export const FOOTER = {
+  description: "Experience personalized homeopathic treatment tailored to your genetic blueprint. We blend traditional wisdom with modern science to restore your body's natural balance.",
+  tagline: "Heal By Nature",
+  copyright: "©2026 | Privacy Policies @healbynature",
+};
+export const NAV_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/about', label: 'About Us' },
+  { href: '/treatments', label: 'Treatments' },
+  { href: '/doctors', label: 'Doctors' },
+  { href: '/contact', label: 'Contact Us' },
+];
