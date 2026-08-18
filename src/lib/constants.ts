@@ -344,3 +344,99 @@ export const PHARMACIES_SECTION = {
     },
   ],
 };
+export const CONTACT_CONNECTION = {
+  title: "How would you like to connect?",
+  subtitle:
+    "Choose your preferred consultation method. All platforms are fully encrypted and secure.",
+
+  methods: [
+    {
+      id: "video",
+      title: "Video Call",
+      description: "Face-to-face clinical assessment.",
+      type: "video",
+    },
+    {
+      id: "voice",
+      title: "Voice Call",
+      description: "Clear audio-only session.",
+      type: "phone",
+    },
+    {
+      id: "whatsapp",
+      title: "WhatsApp",
+      description: "Encrypted chat & media.",
+      type: "message",
+    },
+    {
+      id: "zoom",
+      title: "Zoom",
+      description: "Professional conferencing.",
+      type: "users",
+    },
+    {
+      id: "google-meet",
+      title: "Google Meet",
+      description: "Direct browser access.",
+      type: "video",
+    },
+  ],
+};
+
+export const CONTACT_APPOINTMENT = {
+  title: "How would you like to meet?",
+
+  meetingTypes: [
+    {
+      id: "clinic",
+      title: "Clinic Visit",
+      description:
+        "Visit our botanical sanctuary in person for a physical assessment.",
+      type: "clinic",
+    },
+    {
+      id: "online",
+      title: "Online Consultation",
+      description:
+        "Speak with our specialists from the comfort of your home via HD video.",
+      type: "online",
+    },
+  ],
+
+  specialist: {
+    name: "Dr. Elena Vane",
+    qualification: "Botanical Medicine Specialist",
+    experience: "15 years experience in Phytotherapy",
+    image: "/images/doctors/doctor-1.png",
+  },
+
+  slots: [
+    "09:00 AM",
+    "11:45 AM",
+    "02:30 PM",
+  ],
+
+  form: {
+    namePlaceholder: "John Doe",
+    emailPlaceholder: "john@example.com",
+    concernsPlaceholder:
+      "I have been experiencing persistent fatigue and would like to explore herbal remedies...",
+  },
+};
+
+export const CONTACT_INFO = {
+  location: {
+    label: "Dubai Office",
+    details: "Business Bay, Citadel Tower, UAE",
+  },
+
+  whatsapp: {
+    label: "WhatsApp",
+    details: "+971 50 000 0000",
+  },
+
+  email: {
+    label: "Email",
+    details: "hello@healbynature.com",
+  },
+};
