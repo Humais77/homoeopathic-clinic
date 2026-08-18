@@ -2,18 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/src/lib/utils';
-import { NAV_LINKS } from '@/src/lib/constants'; // Import from constants
-
-// REMOVE this local definition
-// const NAV_LINKS = [
-//   { href: '/', label: 'Home' },
-//   { href: '/about', label: 'About Us' },
-//   { href: '/treatments', label: 'Treatments' },
-//   { href: '/doctors', label: 'Doctors' },
-//   { href: '/contact', label: 'Contact Us' },
-// ];
+import { NAV_LINKS, ABOUT_DROPDOWN_LINKS } from '@/src/lib/constants';
+import { Dropdown } from './Dropdown';
 
 export function HeaderClient() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -23,6 +16,9 @@ export function HeaderClient() {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  // Check if any about dropdown link is active
+  const isAboutActive = ABOUT_DROPDOWN_LINKS.some(link => link.href === pathname);
 
   return (
     <>
@@ -34,20 +30,34 @@ export function HeaderClient() {
       >
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 shrink-0">
-              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                HC
-              </div>
-              <span className="text-xl font-bold whitespace-nowrap">
-                <span className="text-primary-600">Homoeopathic</span>
-                <span className="text-gray-800">Clinic</span>
-              </span>
+            {/* Logo - Using Image */}
+            <Link href="/" className="flex items-center shrink-0">
+              <Image
+                src="/images/Logo.png"
+                alt="Heal By Nature"
+                width={50}
+                height={50}
+                className="h-12 w-12 object-contain"
+                priority
+              />
             </Link>
 
-            {/* Desktop Navigation - Using NAV_LINKS from constants */}
+            {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-8">
               {NAV_LINKS.map((link) => {
+                // Check if this is the About Us link
+                if (link.href === '/about') {
+                  return (
+                    <Dropdown
+                      key={link.href}
+                      label={link.label}
+                      href={link.href}
+                      links={ABOUT_DROPDOWN_LINKS}
+                      isActive={isAboutActive || pathname === link.href}
+                    />
+                  );
+                }
+
                 const isActive = pathname === link.href;
                 return (
                   <Link
@@ -121,7 +131,16 @@ export function HeaderClient() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-8">
-              <span className="text-xl font-bold text-primary-600">Menu</span>
+              {/* Mobile Menu Logo */}
+              <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
+                <Image
+                  src="/images/logo.png"
+                  alt="Heal By Nature"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 object-contain"
+                />
+              </Link>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -133,14 +152,55 @@ export function HeaderClient() {
               </button>
             </div>
 
-            {/* Mobile Navigation - Using NAV_LINKS from constants */}
+            {/* Mobile Navigation */}
             <nav className="flex flex-col gap-6">
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
+                
+                // Show About Us dropdown in mobile as expandable
+                if (link.href === '/about') {
+                  return (
+                    <div key={link.href} className="flex flex-col gap-3">
+                      <Link
+                        href={link.href}
+                        className={cn(
+                          'text-lg font-medium transition-colors',
+                          isActive || isAboutActive
+                            ? 'text-primary-600'
+                            : 'text-gray-700 hover:text-primary-600'
+                        )}
+                      >
+                        {link.label}
+                      </Link>
+                      <div className="flex flex-col gap-2 pl-4 border-l-2 border-gray-200">
+                        {ABOUT_DROPDOWN_LINKS.map((dropdownLink) => {
+                          const isDropdownActive = pathname === dropdownLink.href;
+                          return (
+                            <Link
+                              key={dropdownLink.href}
+                              href={dropdownLink.href}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className={cn(
+                                'text-sm transition-colors',
+                                isDropdownActive
+                                  ? 'text-primary-600 font-medium'
+                                  : 'text-gray-500 hover:text-primary-600'
+                              )}
+                            >
+                              {dropdownLink.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className={cn(
                       'text-lg font-medium transition-colors',
                       isActive
@@ -154,6 +214,7 @@ export function HeaderClient() {
               })}
               <Link
                 href="/consultation"
+                onClick={() => setIsMobileMenuOpen(false)}
                 className="mt-4 inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors text-center"
               >
                 Online Consultation
