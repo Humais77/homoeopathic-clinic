@@ -4,6 +4,7 @@ import { AboutMissionVision } from "@/src/components/sections/AboutMissionVision
 import { WhyHealByNature } from "@/src/components/sections/WhyHealByNature";
 import { FounderCeoHome } from "@/src/components/sections/FounderCeoHome";
 import { ConsultationSection } from "@/src/components/sections/ConsultationSection";
+import { StartJourney } from "@/src/components/sections/StartJourney";
 
 export const metadata = {
   title: 'About Us - Homoeopathic Clinic',
@@ -26,6 +27,7 @@ export default function AboutPage() {
       <WhyHealByNature/>
       <FounderCeoHome/>
       <ConsultationSection/>
+      <StartJourney/>
     </main>
   );
 }
