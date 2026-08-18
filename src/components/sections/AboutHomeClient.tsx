@@ -8,14 +8,8 @@ export function AboutHomeClient() {
   return (
     <section className="bg-white py-12 sm:py-16 lg:py-20">
       <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14 xl:gap-16">
-
-          {/* =========================================================
-              LEFT — IMAGE
-          ========================================================== */}
-          <div className="relative mx-auto w-full max-w-[560px] lg:mx-0">
-
-            {/* Main Image */}
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14 xl:gap-16">
+          <div className="relative order-2 mx-auto w-full max-w-[560px] lg:order-1 lg:mx-0">
             <div className="relative overflow-hidden rounded-[20px] sm:rounded-[24px]">
               <Image
                 src="/images/Hero-bg.png"
@@ -26,13 +20,9 @@ export function AboutHomeClient() {
                 className="h-auto w-full object-cover"
               />
 
-              {/* Very subtle image overlay */}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent" />
             </div>
 
-            {/* =====================================================
-                25+ EXPERIENCE BADGE
-            ====================================================== */}
             <div
               className="
                 absolute
@@ -49,7 +39,6 @@ export function AboutHomeClient() {
                 py-4
                 text-white
                 shadow-xl
-
                 sm:-bottom-2
                 sm:right-[-8px]
                 sm:min-h-[145px]
@@ -68,15 +57,8 @@ export function AboutHomeClient() {
             </div>
           </div>
 
-          {/* =========================================================
-              RIGHT — CONTENT
-          ========================================================== */}
-          <div className="relative">
-
-            {/* Floating Contact Icons */}
+          <div className="relative order-1 lg:order-2">
             <div className="absolute -right-1 -top-2 hidden flex-col gap-3 sm:flex lg:-right-4 lg:-top-8">
-
-              {/* WhatsApp */}
               <Link
                 href="https://wa.me/"
                 aria-label="Contact us on WhatsApp"
@@ -106,7 +88,6 @@ export function AboutHomeClient() {
                 </svg>
               </Link>
 
-              {/* Chat / Consultation */}
               <Link
                 href={ABOUT_HOME.ctaLink}
                 aria-label="Book an online consultation"
@@ -139,12 +120,10 @@ export function AboutHomeClient() {
               </Link>
             </div>
 
-            {/* Small Heading */}
             <span className="block text-sm font-semibold tracking-wide text-[#45a94a]">
               {ABOUT_HOME.title}
             </span>
 
-            {/* Main Heading */}
             <h2
               className="
                 mt-2
@@ -154,23 +133,19 @@ export function AboutHomeClient() {
                 leading-[1.08]
                 tracking-[-1px]
                 text-[#151515]
-
                 sm:text-[40px]
                 md:text-[44px]
                 lg:text-[46px]
                 xl:text-[48px]
               "
             >
-              <span className="block">
-                Healing Naturally.
-              </span>
+              <span className="block">Healing Naturally.</span>
 
               <span className="block text-[#11136b]">
                 Caring Completely.
               </span>
             </h2>
 
-            {/* Description */}
             <p
               className="
                 mt-4
@@ -178,7 +153,6 @@ export function AboutHomeClient() {
                 text-[14px]
                 leading-[1.48]
                 text-[#555]
-
                 sm:mt-5
                 sm:text-[15px]
                 md:text-base
@@ -187,7 +161,6 @@ export function AboutHomeClient() {
               {ABOUT_HOME.description}
             </p>
 
-            {/* CTA */}
             <div className="mt-6 sm:mt-7">
               <Link
                 href={ABOUT_HOME.ctaLink}
@@ -209,7 +182,6 @@ export function AboutHomeClient() {
                   hover:bg-[#38913e]
                   hover:shadow-lg
                   hover:shadow-green-600/20
-
                   sm:min-w-[245px]
                   sm:py-3.5
                 "
