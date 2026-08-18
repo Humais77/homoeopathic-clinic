@@ -215,3 +215,132 @@ export const ABOUT_MISSION_VISION = {
       "A world where the first line of defense is a harmonious lifestyle, and where clinics are sanctuaries of education, empowerment, and natural clinical excellence.",
   },
 };
+export const DOCTORS_SECTION = {
+  title: "Meet Our Specialists",
+  subtitle:
+    "Personalized homeopathic treatments designed to restore health naturally.",
+  doctors: [
+    {
+      id: 1,
+      name: "Micol Efigenio",
+      qualification: "MD (HOM)",
+      description:
+        "Certified with 8 years of experience. Passionate about natural healing.",
+      image: "/images/doctors/doctor-1.png",
+    },
+    {
+      id: 2,
+      name: "Irma Winnifred",
+      qualification: "MD, GOLD MEDALIST",
+      description:
+        "Certified with 9 years of experience. Dedicated to patient-centered care.",
+      image: "/images/doctors/doctor-2.png",
+    },
+    {
+      id: 3,
+      name: "Mnason Prabhakar",
+      qualification: "DHM, CLINICAL EXPERT",
+      description:
+        "Experienced practitioner focused on holistic and personalized treatment.",
+      image: "/images/doctors/doctor-3.png",
+    },
+    {
+      id: 4,
+      name: "Mnason Prabhakar",
+      qualification: "DHM, CLINICAL EXPERT",
+      description:
+        "Experienced practitioner focused on holistic and personalized treatment.",
+      image: "/images/doctors/doctor-3.png",
+    },
+    {
+      id: 5,
+      name: "Micol Efigenio",
+      qualification: "MD (HOM)",
+      description:
+        "Certified with 8 years of experience. Passionate about natural healing.",
+      image: "/images/doctors/doctor-1.png",
+    },
+    {
+      id: 6,
+      name: "Irma Winnifred",
+      qualification: "MD, GOLD MEDALIST",
+      description:
+        "Certified with 9 years of experience. Dedicated to patient-centered care.",
+      image: "/images/doctors/doctor-2.png",
+    },
+    {
+      id: 7,
+      name: "Irma Winnifred",
+      qualification: "MD, GOLD MEDALIST",
+      description:
+        "Certified with 9 years of experience. Dedicated to patient-centered care.",
+      image: "/images/doctors/doctor-2.png",
+    },
+    {
+      id: 8,
+      name: "Mnason Prabhakar",
+      qualification: "DHM, CLINICAL EXPERT",
+      description:
+        "Experienced practitioner focused on holistic and personalized treatment.",
+      image: "/images/doctors/doctor-3.png",
+    },
+    {
+      id: 9,
+      name: "Micol Efigenio",
+      qualification: "MD (HOM)",
+      description:
+        "Certified with 8 years of experience. Passionate about natural healing.",
+      image: "/images/doctors/doctor-1.png",
+    },
+  ],
+};
+
+export const PHARMACIES_SECTION = {
+  title: "Our Trusted Pharmacies",
+  subtitle:
+    "Browse a trusted network of quality homeopathic pharmacies to support your healing journey.",
+  pharmacies: [
+    {
+      id: 1,
+      name: "Al-Shifa Homeopathic",
+      description:
+        "Trusted homeopathic medicines for complete wellness.",
+      image: "/images/pharmacies/al-shifa.jpg",
+    },
+    {
+      id: 2,
+      name: "Hamdard Pharmacy",
+      description:
+        "Providing quality homeopathic solutions with trust and experience.",
+      image: "/images/pharmacies/hamdard.jpg",
+    },
+    {
+      id: 3,
+      name: "Nature Cure",
+      description:
+        "Authentic natural medicines focused on safe healing.",
+      image: "/images/pharmacies/nature-cure.jpg",
+    },
+    {
+      id: 4,
+      name: "Hamdard Pharmacy",
+      description:
+        "Providing quality homeopathic solutions with trust and experience.",
+      image: "/images/pharmacies/hamdard.jpg",
+    },
+    {
+      id: 5,
+      name: "Nature Cure",
+      description:
+        "Authentic natural medicines focused on safe healing.",
+      image: "/images/pharmacies/nature-cure.jpg",
+    },
+    {
+      id: 6,
+      name: "Al-Shifa Homeopathic",
+      description:
+        "Trusted homeopathic medicines for complete wellness.",
+      image: "/images/pharmacies/al-shifa.jpg",
+    },
+  ],
+};
