@@ -99,3 +99,37 @@ export const TESTIMONIALS = {
     },
   ],
 };
+export const CONSULTATION = {
+  title: "Get Online Consultation",
+  form: {
+    nameLabel: "YOUR NAME",
+    namePlaceholder: "Full Name",
+    emailLabel: "EMAIL ADDRESS",
+    emailPlaceholder: "email@domain.com",
+    treatmentLabel: "Treatment",
+    treatmentPlaceholder: "Hair Fall",
+    messageLabel: "MESSAGE",
+    messagePlaceholder: "How can we help you?",
+    buttonText: "Send Inquiry",
+  },
+  info: {
+    title: "Reach Us Now",
+    description: "Visit our design studio or reach out via our digital channels for immediate support.",
+    address: {
+      label: "Dubai Office",
+      details: "Business Bay, Citadel Tower, UAE",
+    },
+    phone: {
+      label: "Phone",
+      numbers: ["+971 4 000 0000", "+971 50 000 0000"],
+    },
+    email: {
+      label: "Email",
+      address: "hello@healbynature.com",
+    },
+    whatsapp: {
+      label: "WhatsApp",
+      number: "+971 50 000 0000",
+    },
+  },
+};

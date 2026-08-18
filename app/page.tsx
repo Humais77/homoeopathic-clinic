@@ -1,4 +1,5 @@
 import { AboutHome } from "@/src/components/sections/AboutHome";
+import { ConsultationSection } from "@/src/components/sections/ConsultationSection";
 import { FounderCeoHome } from "@/src/components/sections/FounderCeoHome";
 import { Hero } from "@/src/components/sections/Hero";
 import { StartJourney } from "@/src/components/sections/StartJourney";
@@ -14,6 +15,7 @@ export default function Home() {
       <WhyHealByNature/>
       <FounderCeoHome/>
       <Testimonials/>
+      <ConsultationSection/>
       <StartJourney/>
     </main>
   );
