@@ -17,8 +17,36 @@ export function HeaderClient() {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [isMobileMenuOpen]);
+
   // Check if any about dropdown link is active
   const isAboutActive = ABOUT_DROPDOWN_LINKS.some(link => link.href === pathname);
+
+  const toggleMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <>
@@ -89,7 +117,7 @@ export function HeaderClient() {
 
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={toggleMenu}
               className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Toggle menu"
             >
@@ -124,7 +152,7 @@ export function HeaderClient() {
       {isMobileMenuOpen && (
         <div 
           className="lg:hidden fixed inset-0 z-40 bg-black/50 animate-fade-in" 
-          onClick={() => setIsMobileMenuOpen(false)}
+          onClick={closeMenu}
         >
           <div
             className="fixed top-0 right-0 h-full w-72 bg-white shadow-2xl p-6 overflow-y-auto animate-slide-in-right"
@@ -132,7 +160,7 @@ export function HeaderClient() {
           >
             <div className="flex justify-between items-center mb-8">
               {/* Mobile Menu Logo */}
-              <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
+              <Link href="/" onClick={closeMenu}>
                 <Image
                   src="/images/logo.png"
                   alt="Heal By Nature"
@@ -142,7 +170,7 @@ export function HeaderClient() {
                 />
               </Link>
               <button
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={closeMenu}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Close menu"
               >
@@ -163,6 +191,7 @@ export function HeaderClient() {
                     <div key={link.href} className="flex flex-col gap-3">
                       <Link
                         href={link.href}
+                        onClick={closeMenu}
                         className={cn(
                           'text-lg font-medium transition-colors',
                           isActive || isAboutActive
@@ -179,7 +208,7 @@ export function HeaderClient() {
                             <Link
                               key={dropdownLink.href}
                               href={dropdownLink.href}
-                              onClick={() => setIsMobileMenuOpen(false)}
+                              onClick={closeMenu}
                               className={cn(
                                 'text-sm transition-colors',
                                 isDropdownActive
@@ -200,7 +229,7 @@ export function HeaderClient() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMenu}
                     className={cn(
                       'text-lg font-medium transition-colors',
                       isActive
@@ -214,7 +243,7 @@ export function HeaderClient() {
               })}
               <Link
                 href="/consultation"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={closeMenu}
                 className="mt-4 inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors text-center"
               >
                 Online Consultation

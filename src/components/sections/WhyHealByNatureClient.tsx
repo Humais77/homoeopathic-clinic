@@ -54,7 +54,7 @@ export function WhyHealByNatureClient() {
             <div className="relative min-h-[430px] overflow-hidden rounded-[18px] shadow-[0_5px_20px_rgba(0,0,0,0.08)] md:min-h-[500px] lg:col-span-6 lg:row-span-2">
 
               <Image
-                src="/images/nature-healing.jpg"
+                src="/images/Hero-bg.png"
                 alt="Expert Doctors"
                 fill
                 priority
