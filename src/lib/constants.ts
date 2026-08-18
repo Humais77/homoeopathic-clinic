@@ -189,3 +189,29 @@ export const TREATMENTS_SECTION = {
   exploreAllText: "Explore All Treatments",
   exploreAllLink: "/treatments",
 };
+export const ABOUT_TRUSTED_CARE = {
+  title: "About Us",
+  subtitle: "Trusted Care.",
+  subtitleHighlight: "Natural Results.",
+  description:
+    "At Heel By Nature, we believe true healing begins by treating the root cause, not just the symptoms. Through personalized homeopathic care and a holistic approach, we provide safe, natural, and effective treatment plans tailored to every individual. Our mission is to help patients restore balance, achieve lasting wellness, and enjoy healthier lives with compassionate care and clinical excellence.",
+  stats: [
+    { label: "Our Experience", value: "10+ Years" },
+    { label: "Satisfaction Rate", value: "95%" },
+  ],
+  ctaText: "Online Consultation",
+  ctaLink: "/consultation",
+};
+
+export const ABOUT_MISSION_VISION = {
+  mission: {
+    title: "Our Mission",
+    description:
+      "To restore the inherent vitality of our community by integrating clinical diagnostic precision with the restorative power of earth's natural pharmacopeia.",
+  },
+  vision: {
+    title: "Our Vision",
+    description:
+      "A world where the first line of defense is a harmonious lifestyle, and where clinics are sanctuaries of education, empowerment, and natural clinical excellence.",
+  },
+};
