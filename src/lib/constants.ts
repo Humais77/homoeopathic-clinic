@@ -66,3 +66,14 @@ export const ABOUT_DROPDOWN_LINKS = [
   { href: '/about/testinomials', label: 'Testinomials' },
   { href: '/about/blogs', label: 'Blogs' },
 ];
+export const ABOUT_HOME = {
+  title: "About Us",
+  subtitle: "Healing Naturally. Caring Completely.",
+  description: `At Heal By Nature, we are dedicated to transforming lives through the power of natural healing and personalized homeopathic care. We believe every individual is unique, which is why our treatments focus on addressing the underlying causes of illness rather than simply managing symptoms. By blending the wisdom of traditional homeopathy with modern medical understanding, we deliver safe, non-invasive, and holistic healthcare solutions tailored to each patient's needs. Our mission is to help individuals and families achieve lasting wellness, restore balance, and enjoy a healthier future through compassionate care and clinical excellence.`,
+  stats: {
+    years: "25+",
+    label: "Years of Clinical Excellence in The Natural Medicine",
+  },
+  ctaText: "Online Consultation",
+  ctaLink: "/consultation",
+};
