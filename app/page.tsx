@@ -2,6 +2,7 @@ import { AboutHome } from "@/src/components/sections/AboutHome";
 import { FounderCeoHome } from "@/src/components/sections/FounderCeoHome";
 import { Hero } from "@/src/components/sections/Hero";
 import { StartJourney } from "@/src/components/sections/StartJourney";
+import { Testimonials } from "@/src/components/sections/Testimonials";
 import { WhyHealByNature } from "@/src/components/sections/WhyHealByNature";
 
 
@@ -12,6 +13,7 @@ export default function Home() {
       <AboutHome/>
       <WhyHealByNature/>
       <FounderCeoHome/>
+      <Testimonials/>
       <StartJourney/>
     </main>
   );

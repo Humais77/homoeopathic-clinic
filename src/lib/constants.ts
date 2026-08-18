@@ -77,3 +77,25 @@ export const ABOUT_HOME = {
   ctaText: "Online Consultation",
   ctaLink: "/consultation",
 };
+export const TESTIMONIALS = {
+  title: "What Our Client Says",
+  subtitle: "Personalized homeopathic treatments designed to restore health naturally.",
+  testimonials: [
+    {
+      id: 1,
+      name: "Saeed Al Maktoum",
+      role: "Villa Owner, Jumeirah",
+      rating: 5,
+      content:
+        "Oasis Elite transformed our backyard into a stunning resort-style oasis. Their attention to detail in the pool and pergola construction was impeccable.",
+    },
+    {
+      id: 2,
+      name: "Sarah Jenkins",
+      role: "Director, InvestGlobal",
+      rating: 5,
+      content:
+        "The commercial landscaping they provided for our corporate HQ has significantly improved our brand image and employee wellbeing. Truly professional.",
+    },
+  ],
+};
