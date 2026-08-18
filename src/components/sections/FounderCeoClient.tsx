@@ -16,7 +16,7 @@ export function FounderCeoClient() {
           <div className="relative mx-auto w-full max-w-[560px] lg:mx-0">
             <div className="relative overflow-hidden rounded-[20px] sm:rounded-[24px]">
               <Image
-                src="/images/Hero-bg.png"
+                src="/images/Founder&Ceo.png"
                 alt="Founder and CEO - Heal By Nature"
                 width={600}
                 height={650}

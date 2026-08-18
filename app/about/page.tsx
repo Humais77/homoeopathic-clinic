@@ -1,6 +1,9 @@
 import { PageHero } from "@/src/components/sections/PageHero";
 import { AboutTrustedCare } from "@/src/components/sections/AboutTrustedCare";
 import { AboutMissionVision } from "@/src/components/sections/AboutMissionVision";
+import { WhyHealByNature } from "@/src/components/sections/WhyHealByNature";
+import { FounderCeoHome } from "@/src/components/sections/FounderCeoHome";
+import { ConsultationSection } from "@/src/components/sections/ConsultationSection";
 
 export const metadata = {
   title: 'About Us - Homoeopathic Clinic',
@@ -18,12 +21,11 @@ export default function AboutPage() {
         description="Heal By Nature is dedicated to providing personalized homeopathic care that focuses on treating the root cause rather than just the symptoms."
         backgroundImage="/images/AboutUsHero.png"
       />
-
-      {/* Trusted Care Section */}
       <AboutTrustedCare />
-
-      {/* Mission & Vision Section */}
       <AboutMissionVision />
+      <WhyHealByNature/>
+      <FounderCeoHome/>
+      <ConsultationSection/>
     </main>
   );
 }
