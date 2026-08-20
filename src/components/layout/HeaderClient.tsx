@@ -3,14 +3,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/src/lib/utils';
 import { NAV_LINKS, ABOUT_DROPDOWN_LINKS } from '@/src/lib/constants';
 import { Dropdown } from './Dropdown';
+import { useAuth } from '@/src/context/AuthContext';
 
 export function HeaderClient() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { admin, isAuthenticated, isLoading, logout } = useAuth();
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -29,7 +32,6 @@ export function HeaderClient() {
       document.body.style.width = '';
     }
 
-    // Cleanup on unmount
     return () => {
       document.body.style.overflow = '';
       document.body.style.position = '';
@@ -48,6 +50,17 @@ export function HeaderClient() {
     setIsMobileMenuOpen(false);
   };
 
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+    closeMenu();
+  };
+
+  const handleLogin = () => {
+    router.push('/admin/login');
+    closeMenu();
+  };
+
   return (
     <>
       <header
@@ -58,7 +71,7 @@ export function HeaderClient() {
       >
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex items-center justify-between">
-            {/* Logo - Using Image */}
+            {/* Logo */}
             <Link href="/" className="flex items-center shrink-0">
               <Image
                 src="/images/Logo.png"
@@ -73,7 +86,6 @@ export function HeaderClient() {
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-8">
               {NAV_LINKS.map((link) => {
-                // Check if this is the About Us link
                 if (link.href === '/about') {
                   return (
                     <Dropdown
@@ -107,43 +119,67 @@ export function HeaderClient() {
               })}
             </nav>
 
-            {/* Online Consultation Button */}
-            <Link
-              href="/consultation"
-              className="hidden lg:inline-flex items-center justify-center px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-lg hover:shadow-primary-500/30 shrink-0"
-            >
-              Online Consultation
-            </Link>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={toggleMenu}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Toggle menu"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {/* Right Side Buttons */}
+            <div className="flex items-center gap-3">
+              {/* Online Consultation Button */}
+              <Link
+                href="/consultation"
+                className="hidden lg:inline-flex items-center justify-center px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-lg hover:shadow-primary-500/30 shrink-0"
               >
-                {isMobileMenuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
+                Online Consultation
+              </Link>
+
+              {/* Login/Logout Button - Desktop */}
+              {!isLoading && (
+                <div className="hidden lg:block">
+                  {isAuthenticated ? (
+                    <button
+                      onClick={handleLogout}
+                      className="inline-flex items-center justify-center px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors duration-200 shadow-lg hover:shadow-red-500/30 shrink-0 text-sm"
+                    >
+                      Logout
+                    </button>
+                  ) : (
+                    <Link
+                      href="/admin/login"
+                      className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-colors duration-200 shadow-lg hover:shadow-gray-500/30 shrink-0 text-sm"
+                    >
+                      Admin Login
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={toggleMenu}
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Toggle menu"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {isMobileMenuOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -159,7 +195,6 @@ export function HeaderClient() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-8">
-              {/* Mobile Menu Logo */}
               <Link href="/" onClick={closeMenu}>
                 <Image
                   src="/images/logo.png"
@@ -185,7 +220,6 @@ export function HeaderClient() {
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
                 
-                // Show About Us dropdown in mobile as expandable
                 if (link.href === '/about') {
                   return (
                     <div key={link.href} className="flex flex-col gap-3">
@@ -241,13 +275,37 @@ export function HeaderClient() {
                   </Link>
                 );
               })}
+
+              {/* Mobile Consultation Button */}
               <Link
                 href="/consultation"
                 onClick={closeMenu}
-                className="mt-4 inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors text-center"
+                className="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors text-center"
               >
                 Online Consultation
               </Link>
+
+              {/* Mobile Login/Logout Button */}
+              {!isLoading && (
+                <div className="mt-2">
+                  {isAuthenticated ? (
+                    <button
+                      onClick={handleLogout}
+                      className="w-full inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors text-center"
+                    >
+                      Logout
+                    </button>
+                  ) : (
+                    <Link
+                      href="/admin/login"
+                      onClick={closeMenu}
+                      className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-colors text-center"
+                    >
+                      Admin Login
+                    </Link>
+                  )}
+                </div>
+              )}
             </nav>
           </div>
         </div>
