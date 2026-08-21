@@ -172,21 +172,55 @@ export function ContactAppointmentClient({
     return result;
   }, []);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+
+  setSubmitted(false);
+
+  try {
+    const appointmentDate = new Date(
+      2026,
+      7,
+      selectedDate
+    ).toISOString();
+
+    const response = await fetch("/api/appointments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        meetingType,
+        appointmentDate,
+        timeSlot: selectedSlot,
+        concerns,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to book appointment");
+    }
 
     setSubmitted(true);
 
-    // Connect your API / database here.
-    console.log({
-      meetingType,
-      selectedDate,
-      selectedSlot,
-      name,
-      email,
-      concerns,
-    });
+    // Clear form
+    setName("");
+    setEmail("");
+    setConcerns("");
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong. Please try again."
+    );
   }
+}
 
   return (
     <div>
