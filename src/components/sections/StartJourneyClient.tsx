@@ -50,7 +50,7 @@ export function StartJourneyClient() {
           <div className="absolute bottom-0 right-[3%] hidden h-[245px] w-[270px] sm:block md:right-[5%] md:h-[250px] md:w-[290px] lg:right-[6%] lg:w-[300px]">
 
             <Image
-              src="/images/Hero-bg.png"
+              src="/images/Home/StartJourney-Img.png"
               alt="Doctor"
               fill
               sizes="300px"
@@ -61,7 +61,7 @@ export function StartJourneyClient() {
           {/* Mobile doctor image */}
           <div className="absolute bottom-0 right-[-35px] block h-[180px] w-[190px] opacity-20 sm:hidden">
             <Image
-              src="/images/Hero-bg.png"
+              src="/images/Home/StartJourney-Img.png"
               alt=""
               fill
               sizes="190px"

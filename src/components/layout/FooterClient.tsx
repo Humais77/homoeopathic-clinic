@@ -17,7 +17,7 @@ export function FooterClient() {
             className="relative z-20 flex items-center justify-center"
           >
             <Image
-              src="/images/logo.png"
+              src="/images/Home/FooterLogo-Img.png"
               alt="Heal By Nature"
               width={70}
               height={70}
