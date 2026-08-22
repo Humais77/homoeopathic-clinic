@@ -12,6 +12,14 @@ export async function GET() {
         { status: 401 }
       );
     }
+    const dashboardData = { message: "Welcome to the dashboard" };
+
+    // ❌ DO NOT just write: NextResponse.json(...)
+    // ✅ MUST include the return keyword:
+    return NextResponse.json({ 
+      success: true, 
+      data: dashboardData 
+    });
 
   } catch (error) {
     console.error('Dashboard error:', error);

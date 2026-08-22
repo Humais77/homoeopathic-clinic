@@ -1,4 +1,3 @@
-
 import { createSession } from '@/src/lib/auth';
 import { comparePassword } from '@/src/lib/password';
 import { prisma } from '@/src/lib/prisma';
@@ -9,18 +8,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate input
     const validation = loginSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid input'},
+        { error: 'Invalid input' },
         { status: 400 }
       );
     }
 
     const { email, password } = validation.data;
 
-    // Find admin user
     const admin = await prisma.adminUser.findUnique({
       where: { email },
     });
@@ -32,7 +29,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password
     const isValid = await comparePassword(password, admin.passwordHash);
     if (!isValid) {
       return NextResponse.json(
@@ -41,7 +37,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create session
     await createSession(admin.id);
 
     return NextResponse.json({
@@ -49,6 +44,7 @@ export async function POST(request: NextRequest) {
       admin: {
         id: admin.id,
         email: admin.email,
+        name: admin.name, // Include name here
       },
     });
   } catch (error) {

@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/src/context/AuthContext'; // <-- Import useAuth
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { login } = useAuth(); // <-- Extract login from context
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,18 +19,8 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
+      // Use the context's login method so the global state updates instantly!
+      await login(email, password);
       router.push('/admin/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');

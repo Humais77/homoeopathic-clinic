@@ -22,7 +22,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check authentication on mount
   useEffect(() => {
     checkAuth();
   }, []);

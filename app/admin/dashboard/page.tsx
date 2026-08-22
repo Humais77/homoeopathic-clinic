@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/src/context/AuthContext';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [admin, setAdmin] = useState<{ name: string; email: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Removed `logout` from here since we no longer need it in this file
+  const { admin, isLoading: authLoading } = useAuth();
+  
   const [stats, setStats] = useState({
     appointments: 0,
     consultations: 0,
@@ -17,25 +19,16 @@ export default function AdminDashboardPage() {
   });
 
   useEffect(() => {
-    fetchAdmin();
-    fetchStats();
-  }, []);
-
-  const fetchAdmin = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      if (!response.ok) {
-        router.push('/admin/login');
-        return;
-      }
-      const data = await response.json();
-      setAdmin(data.admin);
-    } catch (error) {
+    if (!authLoading && !admin) {
       router.push('/admin/login');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [admin, authLoading, router]);
+
+  useEffect(() => {
+    if (admin) {
+      fetchStats();
+    }
+  }, [admin]);
 
   const fetchStats = async () => {
     try {
@@ -49,16 +42,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/admin/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
-  if (loading) {
+  if (authLoading || !admin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -71,19 +55,11 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header - Removed the inner flex-between and the logout button */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-sm text-gray-600">Welcome, {admin?.name}</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Logout
-          </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-sm text-gray-600">Welcome, {admin?.name}</p>
         </div>
       </header>
 
@@ -93,23 +69,23 @@ export default function AdminDashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="text-sm font-medium text-gray-500">Appointments</div>
-            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.appointments}</div>
+            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.appointments || 0}</div>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="text-sm font-medium text-gray-500">Consultations</div>
-            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.consultations}</div>
+            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.consultations || 0}</div>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="text-sm font-medium text-gray-500">Doctors</div>
-            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.doctors}</div>
+            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.doctors || 0}</div>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="text-sm font-medium text-gray-500">Services</div>
-            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.services}</div>
+            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.services || 0}</div>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="text-sm font-medium text-gray-500">Blogs</div>
-            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.blogs}</div>
+            <div className="text-3xl font-bold text-gray-900 mt-2">{stats.blogs || 0}</div>
           </div>
         </div>
 

@@ -34,7 +34,6 @@ export async function createSession(adminId: string): Promise<void> {
 export async function getSession(): Promise<{ adminId: string } | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE)?.value;
-
   if (!token) return null;
 
   try {
@@ -50,18 +49,19 @@ export async function clearSession(): Promise<void> {
   cookieStore.delete(AUTH_COOKIE);
 }
 
-export async function getAdminFromSession(): Promise<{ id: string; email: string; } | null> {
+export async function getAdminFromSession(): Promise<{ id: string; email: string; name: string; } | null> {
   const session = await getSession();
   if (!session) return null;
+
   const admin = await prisma.adminUser.findUnique({
     where: { id: session.adminId },
-    select: { id: true, email: true},
+    select: { id: true, email: true, name: true },
   });
 
   return admin;
 }
 
-export async function requireAuth(): Promise<{ id: string; email: string; }> {
+export async function requireAuth(): Promise<{ id: string; email: string; name: string; }> {
   const admin = await getAdminFromSession();
   if (!admin) {
     throw new Error('Unauthorized');
@@ -69,13 +69,13 @@ export async function requireAuth(): Promise<{ id: string; email: string; }> {
   return admin;
 }
 
-export async function validateAuth(): Promise<{ id: string; email: string; } | null> {
+export async function validateAuth(): Promise<{ id: string; email: string; name: string; } | null> {
   const session = await getSession();
   if (!session) return null;
 
   const admin = await prisma.adminUser.findUnique({
     where: { id: session.adminId },
-    select: { id: true, email: true},
+    select: { id: true, email: true, name: true },
   });
 
   return admin;
