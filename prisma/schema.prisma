@@ -44,16 +44,40 @@ model Treatment {
   @@map("treatments")
 }
 model Appointment {
-  id              String   @id @default(cuid())
-  name            String
-  email           String
-  meetingType     String
+  id             String   @id @default(cuid())
+
+  name           String
+  email          String
+  concerns       String
+
+  meetingType    String
   appointmentDate DateTime
-  timeSlot        String
-  concerns        String
-  status          String   @default("PENDING")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  appointmentTime String
+
+  doctorId       String
+  doctor         Doctor   @relation(fields: [doctorId], references: [id])
+
+  status         String   @default("PENDING")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("appointments")
+}
+model Doctor {
+  id             String   @id @default(cuid())
+  name           String
+  qualification  String
+  specialization String?
+  experience     String?
+  description    String?
+  image          String?
+  isActive       Boolean  @default(true)
+
+  appointments   Appointment[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("doctors")
 }

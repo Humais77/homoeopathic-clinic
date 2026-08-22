@@ -10,11 +10,14 @@ type MeetingType = {
   type: string;
 };
 
-type Specialist = {
+type Doctor = {
+  id: string;
   name: string;
   qualification: string;
-  experience: string;
-  image: string;
+  experience: string | null;
+  specialization?: string | null;
+  description?: string | null;
+  image: string | null;
 };
 
 type FormData = {
@@ -25,7 +28,7 @@ type FormData = {
 
 type Props = {
   meetingTypes: MeetingType[];
-  specialist: Specialist;
+  doctors: Doctor[];
   slots: string[];
   form: FormData;
 };
@@ -116,25 +119,46 @@ function StarRating() {
 
 export function ContactAppointmentClient({
   meetingTypes,
-  specialist,
+  doctors,
   slots,
   form,
 }: Props) {
-  const [meetingType, setMeetingType] = useState("clinic");
+  const [meetingType, setMeetingType] = useState(
+    meetingTypes[0]?.id || "clinic"
+  );
+
+  const [selectedDoctorId, setSelectedDoctorId] = useState(
+    doctors[0]?.id || ""
+  );
+
+  const selectedDoctor = doctors.find(
+    (doctor) => doctor.id === selectedDoctorId
+  );
+
   const [selectedDate, setSelectedDate] = useState(10);
-  const [selectedSlot, setSelectedSlot] = useState("11:45 AM");
+
+  const [selectedSlot, setSelectedSlot] = useState(
+    slots[0] || ""
+  );
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [concerns, setConcerns] = useState("");
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
+  /*
+   * Calendar
+   */
   const days = useMemo(() => {
     const year = 2026;
-    const month = 7;
+    const month = 7; // August = 7 because JavaScript months start from 0
 
-    const firstDay = new Date(Date.UTC(year, month, 1)).getUTCDay();
+    const firstDay = new Date(
+      Date.UTC(year, month, 1)
+    ).getUTCDay();
+
     const totalDays = new Date(
       Date.UTC(year, month + 1, 0)
     ).getUTCDate();
@@ -148,6 +172,7 @@ export function ContactAppointmentClient({
       currentMonth: boolean;
     }[] = [];
 
+    // Previous month's days
     for (let i = firstDay - 1; i >= 0; i--) {
       result.push({
         day: previousMonthDays - i,
@@ -155,6 +180,7 @@ export function ContactAppointmentClient({
       });
     }
 
+    // Current month's days
     for (let day = 1; day <= totalDays; day++) {
       result.push({
         day,
@@ -162,69 +188,110 @@ export function ContactAppointmentClient({
       });
     }
 
+    // Next month's days
+    let nextMonthDay = 1;
+
     while (result.length < 42) {
       result.push({
-        day: result.length - totalDays - firstDay + 1,
+        day: nextMonthDay,
         currentMonth: false,
       });
+
+      nextMonthDay++;
     }
 
     return result;
   }, []);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-  e.preventDefault();
+  /*
+   * Submit appointment
+   */
+  async function handleSubmit(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
 
-  setSubmitted(false);
+    setSubmitted(false);
 
-  try {
-    const appointmentDate = new Date(
-      2026,
-      7,
-      selectedDate
-    ).toISOString();
-
-    const response = await fetch("/api/appointments", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-        email,
-        meetingType,
-        appointmentDate,
-        timeSlot: selectedSlot,
-        concerns,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to book appointment");
+    if (!selectedDoctorId) {
+      alert("Please select a specialist.");
+      return;
     }
 
-    setSubmitted(true);
+    if (!selectedSlot) {
+      alert("Please select an available time slot.");
+      return;
+    }
 
-    // Clear form
-    setName("");
-    setEmail("");
-    setConcerns("");
-  } catch (error) {
-    console.error(error);
+    setLoading(true);
 
-    alert(
-      error instanceof Error
-        ? error.message
-        : "Something went wrong. Please try again."
-    );
+    try {
+      /*
+       * August 2026
+       *
+       * JavaScript:
+       * 0 = January
+       * 7 = August
+       */
+      const appointmentDate = new Date(
+        2026,
+        7,
+        selectedDate
+      ).toISOString();
+
+      const response = await fetch("/api/appointments", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+       body: JSON.stringify({
+  name: name.trim(),
+  email: email.trim(),
+  meetingType,
+  appointmentDate,
+  appointmentTime: selectedSlot,
+  concerns: concerns.trim(),
+  doctorId: selectedDoctorId,
+}),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to book appointment"
+        );
+      }
+
+      setSubmitted(true);
+
+      // Clear patient form
+      setName("");
+      setEmail("");
+      setConcerns("");
+
+      console.log("Appointment created:", data.appointment);
+    } catch (error) {
+      console.error("Appointment booking error:", error);
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
   return (
     <div>
-      {/* Meeting Types */}
+      {/* =====================================================
+          MEETING TYPES
+      ===================================================== */}
+
       <div className="grid gap-4 md:grid-cols-2">
         {meetingTypes.map((type) => {
           const selected = meetingType === type.id;
@@ -233,7 +300,10 @@ export function ContactAppointmentClient({
             <button
               key={type.id}
               type="button"
-              onClick={() => setMeetingType(type.id)}
+              onClick={() => {
+                setMeetingType(type.id);
+                setSubmitted(false);
+              }}
               className={`rounded-[20px] border-2 p-5 text-left transition-all md:min-h-[152px] ${
                 selected
                   ? "border-[#151568] bg-[#151568] text-white"
@@ -242,7 +312,9 @@ export function ContactAppointmentClient({
             >
               <div
                 className={`mb-2 ${
-                  selected ? "text-white" : "text-[#151568]"
+                  selected
+                    ? "text-white"
+                    : "text-[#151568]"
                 }`}
               >
                 {type.type === "clinic" ? (
@@ -258,7 +330,9 @@ export function ContactAppointmentClient({
 
               <p
                 className={`mt-1 max-w-md text-xs leading-5 ${
-                  selected ? "text-white/75" : "text-gray-500"
+                  selected
+                    ? "text-white/75"
+                    : "text-gray-500"
                 }`}
               >
                 {type.description}
@@ -268,7 +342,10 @@ export function ContactAppointmentClient({
         })}
       </div>
 
-      {/* Calendar + Slots */}
+      {/* =====================================================
+          CALENDAR + SLOTS
+      ===================================================== */}
+
       <div className="mt-6">
         <h3 className="mb-4 text-xl font-bold text-[#10105c]">
           Select your preferred time
@@ -276,6 +353,7 @@ export function ContactAppointmentClient({
 
         <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
           {/* Calendar */}
+
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h4 className="text-sm font-bold text-gray-700">
@@ -300,7 +378,15 @@ export function ContactAppointmentClient({
             </div>
 
             <div className="grid grid-cols-7">
-              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+              {[
+                "Su",
+                "Mo",
+                "Tu",
+                "We",
+                "Th",
+                "Fr",
+                "Sa",
+              ].map((day) => (
                 <div
                   key={day}
                   className="pb-2 text-center text-[10px] font-semibold text-gray-600"
@@ -311,7 +397,8 @@ export function ContactAppointmentClient({
 
               {days.map((item, index) => {
                 const selected =
-                  item.currentMonth && item.day === selectedDate;
+                  item.currentMonth &&
+                  item.day === selectedDate;
 
                 return (
                   <button
@@ -340,84 +427,153 @@ export function ContactAppointmentClient({
           </div>
 
           {/* Available Slots */}
+
           <div className="rounded-[20px] bg-[#3da449] p-4">
             <h4 className="mb-3 text-center text-sm font-bold text-white">
               Available Slots
             </h4>
 
-            <div className="grid grid-cols-2 gap-3">
-              {slots.map((slot, index) => {
-                const selected =
-                  selectedSlot === slot && index === 1;
+            {slots.length === 0 ? (
+              <p className="py-4 text-center text-xs text-white/80">
+                No slots available.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {slots.map((slot) => {
+                  const selected =
+                    selectedSlot === slot;
 
-                return (
-                  <button
-                    key={`${slot}-${index}`}
-                    type="button"
-                    onClick={() => {
-                      setSelectedSlot(slot);
-                      setSubmitted(false);
-                    }}
-                    className={`rounded-full border px-3 py-2 text-[10px] font-medium transition ${
-                      selected
-                        ? "border-white bg-white text-[#151568]"
-                        : "border-white/70 text-white hover:bg-white/10"
-                    }`}
-                  >
-                    {slot}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSlot(slot);
+                        setSubmitted(false);
+                      }}
+                      className={`rounded-full border px-3 py-2 text-[10px] font-medium transition ${
+                        selected
+                          ? "border-white bg-white text-[#151568]"
+                          : "border-white/70 text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Specialist */}
+      {/* =====================================================
+          DOCTORS
+      ===================================================== */}
+
       <div className="mt-6">
         <h3 className="mb-4 text-xl font-bold text-[#10105c]">
           Choose your specialist
         </h3>
 
-        <div className="mb-3 flex items-center justify-between rounded-full border border-gray-200 bg-[#fafafa] px-4 py-3">
-          <span className="text-xs text-gray-600">
-            {specialist.name} - {specialist.qualification}
-          </span>
-
-          <ChevronDown />
-        </div>
-
-        <div className="flex items-center gap-4 rounded-[22px] bg-[#f8f8f7] p-3">
-          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full">
-            <Image
-              src={specialist.image}
-              alt={specialist.name}
-              fill
-              className="object-cover"
-            />
+        {doctors.length === 0 ? (
+          <div className="rounded-[20px] bg-gray-50 p-5 text-sm text-gray-500">
+            No specialists are currently available.
           </div>
+        ) : (
+          <>
+            {/* Doctor Dropdown */}
 
-          <div>
-            <h4 className="text-sm font-bold text-[#10105c]">
-              {specialist.name}
-            </h4>
+            <div className="relative mb-3">
+              <select
+                value={selectedDoctorId}
+                onChange={(e) => {
+                  setSelectedDoctorId(e.target.value);
+                  setSubmitted(false);
+                }}
+                className="h-12 w-full appearance-none rounded-full border border-gray-200 bg-[#fafafa] px-4 pr-10 text-xs text-gray-700 outline-none focus:border-[#3da449]"
+              >
+                {doctors.map((doctor) => (
+                  <option
+                    key={doctor.id}
+                    value={doctor.id}
+                  >
+                    {doctor.name} -{" "}
+                    {doctor.qualification}
+                  </option>
+                ))}
+              </select>
 
-            <p className="text-[11px] text-gray-500">
-              {specialist.experience}
-            </p>
+              <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                <ChevronDown />
+              </div>
+            </div>
 
-            <StarRating />
-          </div>
-        </div>
+            {/* Selected Doctor */}
+
+            {selectedDoctor && (
+              <div className="flex items-center gap-4 rounded-[22px] bg-[#f8f8f7] p-3">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full">
+                  {selectedDoctor.image ? (
+                    <Image
+                      src={selectedDoctor.image}
+                      alt={selectedDoctor.name}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#151568] text-lg font-bold text-white">
+                      {selectedDoctor.name
+                        .charAt(0)
+                        .toUpperCase()}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-bold text-[#10105c]">
+                    {selectedDoctor.name}
+                  </h4>
+
+                  <p className="text-[11px] text-gray-500">
+                    {selectedDoctor.qualification}
+                  </p>
+
+                  {selectedDoctor.experience && (
+                    <p className="text-[11px] text-gray-500">
+                      {selectedDoctor.experience}
+                    </p>
+                  )}
+
+                  {selectedDoctor.specialization && (
+                    <p className="text-[11px] text-gray-500">
+                      {selectedDoctor.specialization}
+                    </p>
+                  )}
+
+                  <StarRating />
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="mt-7">
+      {/* =====================================================
+          PATIENT FORM
+      ===================================================== */}
+
+      <form
+        onSubmit={handleSubmit}
+        className="mt-7"
+      >
         <h3 className="mb-5 text-xl font-bold text-[#10105c]">
           Almost there...
         </h3>
 
         <div className="grid gap-4 md:grid-cols-2">
+          {/* Full Name */}
+
           <div>
             <label className="mb-2 block text-[9px] font-semibold text-gray-600">
               FULL NAME
@@ -435,6 +591,8 @@ export function ContactAppointmentClient({
               className="h-11 w-full rounded-full border border-gray-200 bg-[#fafafa] px-4 text-xs text-gray-700 outline-none transition focus:border-[#3da449]"
             />
           </div>
+
+          {/* Email */}
 
           <div>
             <label className="mb-2 block text-[9px] font-semibold text-gray-600">
@@ -455,6 +613,8 @@ export function ContactAppointmentClient({
           </div>
         </div>
 
+        {/* Concerns */}
+
         <div className="mt-4">
           <label className="mb-2 block text-[9px] font-semibold text-gray-600">
             BRIEFLY DESCRIBE YOUR CONCERNS
@@ -473,12 +633,16 @@ export function ContactAppointmentClient({
           />
         </div>
 
+        {/* Success Message */}
+
         {submitted && (
           <div className="mt-4 rounded-xl bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-            Your appointment request has been received. We will contact you
-            shortly.
+            Your appointment request has been received.
+            We will contact you shortly.
           </div>
         )}
+
+        {/* Buttons */}
 
         <div className="mt-5 flex flex-col justify-end gap-3 sm:flex-row">
           <button
@@ -489,16 +653,25 @@ export function ContactAppointmentClient({
               setConcerns("");
               setSubmitted(false);
             }}
-            className="h-11 rounded-xl bg-gray-100 px-10 text-sm font-bold text-gray-700 transition hover:bg-gray-200"
+            disabled={loading}
+            className="h-11 rounded-xl bg-gray-100 px-10 text-sm font-bold text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
 
           <button
             type="submit"
-            className="h-11 rounded-xl bg-[#3da449] px-8 text-sm font-bold text-white transition hover:bg-[#328d3e]"
+            disabled={
+              loading ||
+              doctors.length === 0 ||
+              !selectedDoctorId ||
+              !selectedSlot
+            }
+            className="h-11 rounded-xl bg-[#3da449] px-8 text-sm font-bold text-white transition hover:bg-[#328d3e] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Book Appointment
+            {loading
+              ? "Booking..."
+              : "Book Appointment"}
           </button>
         </div>
       </form>
