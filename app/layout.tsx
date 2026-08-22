@@ -4,6 +4,7 @@ import './globals.css';
 import { Header } from '@/src/components/layout/Header';
 import { Footer } from '@/src/components/layout/Footer';
 import { AuthProvider } from '@/src/context/AuthContext';
+import { UserAuthProvider } from '@/src/context/UserAuthContext';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -24,11 +25,13 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <AuthProvider>
+          <UserAuthProvider>
           <Header />
           <main className="pt-20 min-h-screen">
             {children}
           </main>
           <Footer />
+          </UserAuthProvider>
         </AuthProvider>
       </body>
     </html>

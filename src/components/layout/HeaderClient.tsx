@@ -8,12 +8,28 @@ import { cn } from '@/src/lib/utils';
 import { NAV_LINKS, ABOUT_DROPDOWN_LINKS } from '@/src/lib/constants';
 import { Dropdown } from './Dropdown';
 import { useAuth } from '@/src/context/AuthContext';
+import { useUserAuth } from '@/src/context/UserAuthContext';
 
 export function HeaderClient() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { admin, isAuthenticated, isLoading, logout } = useAuth();
+  
+  // Admin auth
+  const { 
+    admin, 
+    isAuthenticated: isAdminAuthenticated, 
+    isLoading: adminLoading, 
+    logout: adminLogout 
+  } = useAuth();
+  
+  // User auth
+  const { 
+    user, 
+    isAuthenticated: isUserAuthenticated, 
+    isLoading: userLoading, 
+    logout: userLogout 
+  } = useUserAuth();
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -50,14 +66,22 @@ export function HeaderClient() {
     setIsMobileMenuOpen(false);
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleAdminLogout = async () => {
+    await adminLogout();
     router.push('/');
     closeMenu();
+    router.refresh();
   };
 
-  const handleLogin = () => {
-    router.push('/admin/login');
+  const handleUserLogout = async () => {
+    await userLogout();
+    router.push('/');
+    closeMenu();
+    router.refresh();
+  };
+
+  const handleUserLogin = () => {
+    router.push('/user/login');
     closeMenu();
   };
 
@@ -129,22 +153,48 @@ export function HeaderClient() {
                 Online Consultation
               </Link>
 
-              {/* Login/Logout Button - Desktop */}
-              {!isLoading && (
-                <div className="hidden lg:block">
-                  {isAuthenticated ? (
+              {/* User Auth Buttons - Desktop */}
+              {!userLoading && (
+                <div className="hidden lg:flex items-center gap-2">
+                  {isUserAuthenticated ? (
+                    <>
+                      <span className="text-sm text-gray-700 font-medium max-w-[100px] truncate">
+                        Hi, {user?.name}
+                      </span>
+                      <button
+                        onClick={handleUserLogout}
+                        className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors duration-200 shrink-0 text-sm"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      onClick={handleLogout}
+                      onClick={handleUserLogin}
+                      className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-lg hover:shadow-blue-500/30 shrink-0 text-sm"
+                    >
+                      Login
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Admin Login/Logout Button - Desktop */}
+              {!adminLoading && (
+                <div className="hidden lg:block">
+                  {isAdminAuthenticated ? (
+                    <button
+                      onClick={handleAdminLogout}
                       className="inline-flex items-center justify-center px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors duration-200 shadow-lg hover:shadow-red-500/30 shrink-0 text-sm"
                     >
-                      Logout
+                      Admin Logout
                     </button>
                   ) : (
                     <Link
                       href="/admin/login"
                       className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-colors duration-200 shadow-lg hover:shadow-gray-500/30 shrink-0 text-sm"
                     >
-                      Admin Login
+                      Admin
                     </Link>
                   )}
                 </div>
@@ -197,7 +247,7 @@ export function HeaderClient() {
             <div className="flex justify-between items-center mb-8">
               <Link href="/" onClick={closeMenu}>
                 <Image
-                  src="/images/logo.png"
+                  src="/images/Logo.png"
                   alt="Heal By Nature"
                   width={40}
                   height={40}
@@ -285,15 +335,41 @@ export function HeaderClient() {
                 Online Consultation
               </Link>
 
-              {/* Mobile Login/Logout Button */}
-              {!isLoading && (
+              {/* Mobile User Auth Buttons */}
+              {!userLoading && (
                 <div className="mt-2">
-                  {isAuthenticated ? (
+                  {isUserAuthenticated ? (
+                    <>
+                      <div className="text-sm text-gray-700 font-medium mb-2 px-2">
+                        Welcome, {user?.name}
+                      </div>
+                      <button
+                        onClick={handleUserLogout}
+                        className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors text-center"
+                      >
+                        Logout
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      onClick={handleLogout}
+                      onClick={handleUserLogin}
+                      className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-center"
+                    >
+                      Login
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Mobile Admin Login/Logout Button */}
+              {!adminLoading && (
+                <div className="mt-2">
+                  {isAdminAuthenticated ? (
+                    <button
+                      onClick={handleAdminLogout}
                       className="w-full inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors text-center"
                     >
-                      Logout
+                      Admin Logout
                     </button>
                   ) : (
                     <Link
