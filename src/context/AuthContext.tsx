@@ -1,25 +1,48 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 
-interface Admin {
+interface User {
   id: string;
   email: string;
   name: string;
+  phone?: string | null;
+  role: "USER" | "ADMIN";
 }
 
 interface AuthContextType {
-  admin: Admin | null;
+  user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<User>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    phone?: string
+  ) => Promise<User>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext =
+  createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [admin, setAdmin] = useState<Admin | null>(null);
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -27,50 +50,108 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const data = await response.json();
-        setAdmin(data.admin);
-      } else {
-        setAdmin(null);
-      }
-    } catch (error) {
-      setAdmin(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+  try {
+    const response = await fetch("/api/auth/me", {
+      credentials: "include",
+      cache: "no-store",
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      setUser(null);
+      return;
     }
 
     const data = await response.json();
-    setAdmin(data.admin);
+
+    setUser(data.user ?? null);
+  } catch {
+    setUser(null);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  const login = async (
+    email: string,
+    password: string
+  ) => {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Login failed"
+      );
+    }
+
+    setUser(data.user);
+
+    return data.user;
+  };
+
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    phone?: string
+  ) => {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        phone,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Registration failed"
+      );
+    }
+
+    setUser(data.user);
+
+    return data.user;
   };
 
   const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setAdmin(null);
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+
+    setUser(null);
   };
 
   return (
     <AuthContext.Provider
       value={{
-        admin,
+        user,
         isLoading,
         login,
+        register,
         logout,
-        isAuthenticated: !!admin,
+        isAuthenticated: !!user,
+        isAdmin: user?.role === "ADMIN",
       }}
     >
       {children}
@@ -80,8 +161,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+
+  if (!context) {
+    throw new Error(
+      "useAuth must be used within AuthProvider"
+    );
   }
+
   return context;
 }

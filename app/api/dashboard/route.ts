@@ -1,30 +1,58 @@
-
-import { validateAuth } from '@/src/lib/auth';
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/src/lib/auth";
+import { prisma } from "@/src/lib/prisma";
 
 export async function GET() {
   try {
-    // Check authentication
-    const admin = await validateAuth();
-    if (!admin) {
+    await requireAdmin();
+
+    const [
+      appointments,
+      consultations,
+      doctors,
+      services
+    ] = await Promise.all([
+      prisma.appointment.count(),
+
+      prisma.consultationInquiry.count(),
+
+      prisma.doctor.count(),
+
+      prisma.treatment.count(),
+
+    ]);
+
+    return NextResponse.json({
+      appointments,
+      consultations,
+      doctors,
+      services,
+    });
+  } catch (error) {
+    console.error("Dashboard error:", error);
+
+    if (
+      error instanceof Error &&
+      error.message === "Unauthorized"
+    ) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: "Unauthorized" },
         { status: 401 }
       );
     }
-    const dashboardData = { message: "Welcome to the dashboard" };
 
-    // ❌ DO NOT just write: NextResponse.json(...)
-    // ✅ MUST include the return keyword:
-    return NextResponse.json({ 
-      success: true, 
-      data: dashboardData 
-    });
+    if (
+      error instanceof Error &&
+      error.message === "Forbidden"
+    ) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
 
-  } catch (error) {
-    console.error('Dashboard error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

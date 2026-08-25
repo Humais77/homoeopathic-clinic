@@ -1,32 +1,42 @@
-// src/app/api/user/auth/register/route.ts
-import { createUserSession } from '@/src/lib/user-auth';
-import { hashPassword } from '@/src/lib/password';
-import { prisma } from '@/src/lib/prisma';
-import { userRegisterSchema } from '@/src/validators/user-auth.schema';
-import { NextRequest, NextResponse } from 'next/server';
+// src/app/api/auth/register/route.ts
+
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/src/lib/prisma";
+import { createSession } from "@/src/lib/auth";
+import { hashPassword } from "@/src/lib/password";
+import { userRegisterSchema } from "@/src/validators/user-auth.schema";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
     const validation = userRegisterSchema.safeParse(body);
+
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid input' },
+        { error: "Invalid input" },
         { status: 400 }
       );
     }
 
-    const { name, email, password, phone } = validation.data;
+    const {
+      name,
+      email,
+      password,
+      phone,
+    } = validation.data;
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: {
+        email,
+      },
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User with this email already exists' },
+        {
+          error: "User with this email already exists",
+        },
         { status: 409 }
       );
     }
@@ -39,10 +49,11 @@ export async function POST(request: NextRequest) {
         email,
         passwordHash,
         phone,
+        role: "USER",
       },
     });
 
-    await createUserSession(user.id);
+    await createSession(user.id);
 
     return NextResponse.json({
       success: true,
@@ -51,12 +62,14 @@ export async function POST(request: NextRequest) {
         email: user.email,
         name: user.name,
         phone: user.phone,
+        role: user.role,
       },
     });
   } catch (error) {
-    console.error('User registration error:', error);
+    console.error("Registration error:", error);
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

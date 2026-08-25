@@ -1,56 +1,68 @@
-import { createSession } from '@/src/lib/auth';
-import { comparePassword } from '@/src/lib/password';
-import { prisma } from '@/src/lib/prisma';
-import { loginSchema } from '@/src/validators/auth.schema';
-import { NextRequest, NextResponse } from 'next/server';
+// src/app/api/auth/login/route.ts
+
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/src/lib/prisma";
+import { comparePassword } from "@/src/lib/password";
+import { createSession } from "@/src/lib/auth";
+import { loginSchema } from "@/src/validators/auth.schema";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
     const validation = loginSchema.safeParse(body);
+
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid input' },
+        { error: "Invalid email or password" },
         { status: 400 }
       );
     }
 
     const { email, password } = validation.data;
 
-    const admin = await prisma.adminUser.findUnique({
-      where: { email },
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
     });
 
-    if (!admin) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    const isValid = await comparePassword(password, admin.passwordHash);
+    const isValid = await comparePassword(
+      password,
+      user.passwordHash
+    );
+
     if (!isValid) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: "Invalid email or password" },
         { status: 401 }
       );
     }
 
-    await createSession(admin.id);
+    await createSession(user.id);
 
     return NextResponse.json({
       success: true,
-      admin: {
-        id: admin.id,
-        email: admin.email,
-        name: admin.name, // Include name here
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

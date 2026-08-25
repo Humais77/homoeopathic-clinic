@@ -1,21 +1,27 @@
-import { getAdminFromSession } from '@/src/lib/auth';
-import { NextResponse } from 'next/server';
+// src/app/api/auth/me/route.ts
+
+import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/src/lib/auth";
 
 export async function GET() {
   try {
-    const admin = await getAdminFromSession();
-    if (!admin) {
+    const user = await getCurrentUser();
+
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    return NextResponse.json({ admin });
+    return NextResponse.json({
+      user,
+    });
   } catch (error) {
-    console.error('Get admin error:', error);
+    console.error("Auth me error:", error);
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

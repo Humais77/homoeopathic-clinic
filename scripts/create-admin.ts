@@ -4,10 +4,7 @@ import { hashPassword } from "../src/lib/password";
 import "dotenv/config";
 
 console.log("DATABASE_URL exists:", !!process.env.DATABASE_URL);
-console.log(
-  "DATABASE_URL starts with:",
-  process.env.DATABASE_URL?.substring(0, 30)
-);
+
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
 });
@@ -22,21 +19,25 @@ async function main() {
 
   const passwordHash = await hashPassword(password);
 
-  const admin = await prisma.adminUser.upsert({
+  const admin = await prisma.user.upsert({
     where: {
       email,
     },
     update: {
       passwordHash,
+      role: "ADMIN",
     },
     create: {
       email,
+      name: "Admin User",
       passwordHash,
+      role: "ADMIN",
     },
   });
 
   console.log("Admin created successfully:");
-  console.log(admin.email);
+  console.log("Email:", admin.email);
+  console.log("Role:", admin.role);
 }
 
 main()
