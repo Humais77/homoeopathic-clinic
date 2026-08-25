@@ -145,3 +145,12 @@ export async function requireAdmin(): Promise<AuthUser> {
 
   return user;
 }
+export async function requireUser(): Promise<AuthUser> {
+  const user = await requireAuth();
+
+  if (user.role !== "USER") {
+    throw new Error("Forbidden");
+  }
+
+  return user;
+}

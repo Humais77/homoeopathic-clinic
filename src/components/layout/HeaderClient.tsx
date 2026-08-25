@@ -1,94 +1,131 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { cn } from '@/src/lib/utils';
-import { NAV_LINKS, ABOUT_DROPDOWN_LINKS } from '@/src/lib/constants';
-import { Dropdown } from './Dropdown';
-import { useAuth } from '@/src/context/AuthContext';
-import { useUserAuth } from '@/src/context/UserAuthContext';
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { cn } from "@/src/lib/utils";
+import {
+  NAV_LINKS,
+  ABOUT_DROPDOWN_LINKS,
+} from "@/src/lib/constants";
+import { Dropdown } from "./Dropdown";
+import { useAuth } from "@/src/context/AuthContext";
 
 export function HeaderClient() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   const pathname = usePathname();
   const router = useRouter();
-  
-  // Admin auth
+
+  const profileRef = useRef<HTMLDivElement>(null);
+
   const {
-  user,
-  isAuthenticated,
-  isLoading,
-  logout,
-  isAdmin,
-} = useAuth();
-const handleLogin = () => {
-  router.push("/login");
-  closeMenu();
-};
+    user,
+    isAuthenticated,
+    isLoading,
+    logout,
+    isAdmin,
+  } = useAuth();
 
-const handleLogout = async () => {
-  await logout();
+  /*
+   * Close profile dropdown when clicking outside
+   */
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileOpen(false);
+      }
+    };
 
-  router.push("/");
-  closeMenu();
-  router.refresh();
-};
-  // Close mobile menu when route changes
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  /*
+   * Close mobile menu when route changes
+   */
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsProfileOpen(false);
   }, [pathname]);
 
-  // Lock body scroll when mobile menu is open
+  /*
+   * Lock body scroll when mobile menu is open
+   */
   useEffect(() => {
     if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
+      document.body.style.overflow = "";
     }
 
     return () => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
+      document.body.style.overflow = "";
     };
   }, [isMobileMenuOpen]);
 
-  // Check if any about dropdown link is active
-  const isAboutActive = ABOUT_DROPDOWN_LINKS.some(link => link.href === pathname);
+  const isAboutActive = ABOUT_DROPDOWN_LINKS.some(
+    (link) => link.href === pathname
+  );
 
   const toggleMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setIsMobileMenuOpen((prev) => !prev);
   };
 
   const closeMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
-  
+  /*
+   * Logout
+   */
+  const handleLogout = async () => {
+    setIsProfileOpen(false);
+    setIsMobileMenuOpen(false);
 
-  const handleUserLogin = () => {
-    router.push('/user/login');
-    closeMenu();
+    await logout();
+
+    router.push("/");
+    router.refresh();
+  };
+
+  /*
+   * Profile click
+   */
+  const handleProfileClick = () => {
+    setIsProfileOpen((prev) => !prev);
   };
 
   return (
     <>
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
       <header
         className={cn(
-          'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-          'bg-white py-4'
+          "fixed top-0 left-0 right-0 z-50",
+          "bg-white shadow-sm"
         )}
       >
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center shrink-0">
+          <div className="flex items-center justify-between h-20">
+
+            {/* =================================================
+                LOGO
+            ================================================= */}
+            <Link
+              href="/"
+              className="flex items-center shrink-0"
+              onClick={closeMenu}
+            >
               <Image
                 src="/images/Logo.png"
                 alt="Heal By Nature"
@@ -99,34 +136,41 @@ const handleLogout = async () => {
               />
             </Link>
 
-            {/* Desktop Navigation */}
+            {/* =================================================
+                DESKTOP NAVIGATION
+            ================================================= */}
             <nav className="hidden lg:flex items-center gap-8">
               {NAV_LINKS.map((link) => {
-                if (link.href === '/about') {
+                if (link.href === "/about") {
                   return (
                     <Dropdown
                       key={link.href}
                       label={link.label}
                       href={link.href}
                       links={ABOUT_DROPDOWN_LINKS}
-                      isActive={isAboutActive || pathname === link.href}
+                      isActive={
+                        isAboutActive ||
+                        pathname === link.href
+                      }
                     />
                   );
                 }
 
                 const isActive = pathname === link.href;
+
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     className={cn(
-                      'relative font-medium text-sm transition-colors duration-200',
+                      "relative font-medium text-sm transition-colors duration-200",
                       isActive
-                        ? 'text-primary-600'
-                        : 'text-gray-700 hover:text-primary-600'
+                        ? "text-primary-600"
+                        : "text-gray-700 hover:text-primary-600"
                     )}
                   >
                     {link.label}
+
                     {isActive && (
                       <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-primary-600 rounded-full" />
                     )}
@@ -135,55 +179,185 @@ const handleLogout = async () => {
               })}
             </nav>
 
-            {/* Right Side Buttons */}
+            {/* =================================================
+                RIGHT SIDE
+            ================================================= */}
             <div className="flex items-center gap-3">
-              {/* Online Consultation Button */}
+
+              {/* Online Consultation */}
               <Link
                 href="/consultation"
-                className="hidden lg:inline-flex items-center justify-center px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors duration-200 shadow-lg hover:shadow-primary-500/30 shrink-0"
+                className="hidden sm:inline-flex items-center justify-center px-5 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-lg hover:shadow-primary-500/30"
               >
                 Online Consultation
               </Link>
 
+              {/* =================================================
+                  DESKTOP AUTH
+              ================================================= */}
               {!isLoading && (
-  <div className="hidden lg:flex items-center gap-2">
+                <div className="hidden lg:flex items-center">
 
-    {isAuthenticated ? (
-      <>
-        <span className="text-sm text-gray-700 font-medium max-w-[120px] truncate">
-          Hi, {user?.name}
-        </span>
+                  {!isAuthenticated ? (
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Login
+                    </Link>
+                  ) : (
+                    <div
+                      ref={profileRef}
+                      className="relative"
+                    >
+                      {/* Profile Button */}
+                      <button
+                        type="button"
+                        onClick={handleProfileClick}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        {/* User Icon */}
+                        <span className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center">
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                          </svg>
+                        </span>
 
-        {isAdmin && (
-          <Link
-            href="/admin/dashboard"
-            className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-800 text-white font-medium rounded-lg hover:bg-gray-900 transition-colors text-sm"
-          >
-            Dashboard
-          </Link>
-        )}
+                        <span className="max-w-[110px] truncate text-sm font-medium text-gray-700">
+                          {user?.name}
+                        </span>
 
-        <button
-          onClick={handleLogout}
-          className="inline-flex items-center justify-center px-4 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors text-sm"
-        >
-          Logout
-        </button>
-      </>
-    ) : (
-      <button
-        onClick={handleLogin}
-        className="inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors text-sm"
-      >
-        Login
-      </button>
-    )}
+                        <svg
+                          className={cn(
+                            "w-4 h-4 text-gray-500 transition-transform",
+                            isProfileOpen && "rotate-180"
+                          )}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
 
-  </div>
-)}
+                      {/* Profile Dropdown */}
+                      {isProfileOpen && (
+                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
 
-              {/* Mobile Menu Button */}
+                          {/* User Info */}
+                          <div className="px-4 py-3 border-b border-gray-100">
+                            <p className="font-semibold text-gray-900 truncate">
+                              {user?.name}
+                            </p>
+
+                            <p className="text-xs text-gray-500 truncate mt-1">
+                              {user?.email}
+                            </p>
+                          </div>
+
+                          {/* Normal User Dashboard */}
+                          {!isAdmin && (
+                            <Link
+                              href="/user/dashboard"
+                              onClick={() =>
+                                setIsProfileOpen(false)
+                              }
+                              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
+                                />
+                              </svg>
+
+                              My Dashboard
+                            </Link>
+                          )}
+
+                          {/* Admin Dashboard */}
+                          {isAdmin && (
+                            <Link
+                              href="/admin/dashboard"
+                              onClick={() =>
+                                setIsProfileOpen(false)
+                              }
+                              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
+                                />
+                              </svg>
+
+                              Admin Dashboard
+                            </Link>
+                          )}
+
+                          {/* Logout */}
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                              />
+                            </svg>
+
+                            Logout
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* =================================================
+                  MOBILE MENU BUTTON
+              ================================================= */}
               <button
+                type="button"
                 onClick={toggleMenu}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Toggle menu"
@@ -216,18 +390,24 @@ const handleLogout = async () => {
         </div>
       </header>
 
-      {/* Mobile Menu */}
+      {/* =====================================================
+          MOBILE MENU
+      ===================================================== */}
       {isMobileMenuOpen && (
-        <div 
-          className="lg:hidden fixed inset-0 z-40 bg-black/50 animate-fade-in" 
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/50"
           onClick={closeMenu}
         >
           <div
-            className="fixed top-0 right-0 h-full w-72 bg-white shadow-2xl p-6 overflow-y-auto animate-slide-in-right"
+            className="fixed top-0 right-0 h-full w-[85%] max-w-sm bg-white shadow-2xl overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-8">
-              <Link href="/" onClick={closeMenu}>
+            {/* Mobile Header */}
+            <div className="flex justify-between items-center p-5 border-b border-gray-100">
+              <Link
+                href="/"
+                onClick={closeMenu}
+              >
                 <Image
                   src="/images/Logo.png"
                   alt="Heal By Nature"
@@ -236,56 +416,77 @@ const handleLogout = async () => {
                   className="h-10 w-10 object-contain"
                 />
               </Link>
+
               <button
+                type="button"
                 onClick={closeMenu}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg"
                 aria-label="Close menu"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
 
             {/* Mobile Navigation */}
-            <nav className="flex flex-col gap-6">
+            <nav className="p-5 flex flex-col gap-5">
+
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
-                
-                if (link.href === '/about') {
+
+                if (link.href === "/about") {
                   return (
-                    <div key={link.href} className="flex flex-col gap-3">
+                    <div
+                      key={link.href}
+                      className="flex flex-col gap-3"
+                    >
                       <Link
                         href={link.href}
                         onClick={closeMenu}
                         className={cn(
-                          'text-lg font-medium transition-colors',
+                          "text-lg font-medium",
                           isActive || isAboutActive
-                            ? 'text-primary-600'
-                            : 'text-gray-700 hover:text-primary-600'
+                            ? "text-primary-600"
+                            : "text-gray-700"
                         )}
                       >
                         {link.label}
                       </Link>
+
                       <div className="flex flex-col gap-2 pl-4 border-l-2 border-gray-200">
-                        {ABOUT_DROPDOWN_LINKS.map((dropdownLink) => {
-                          const isDropdownActive = pathname === dropdownLink.href;
-                          return (
-                            <Link
-                              key={dropdownLink.href}
-                              href={dropdownLink.href}
-                              onClick={closeMenu}
-                              className={cn(
-                                'text-sm transition-colors',
-                                isDropdownActive
-                                  ? 'text-primary-600 font-medium'
-                                  : 'text-gray-500 hover:text-primary-600'
-                              )}
-                            >
-                              {dropdownLink.label}
-                            </Link>
-                          );
-                        })}
+                        {ABOUT_DROPDOWN_LINKS.map(
+                          (dropdownLink) => {
+                            const isDropdownActive =
+                              pathname === dropdownLink.href;
+
+                            return (
+                              <Link
+                                key={dropdownLink.href}
+                                href={dropdownLink.href}
+                                onClick={closeMenu}
+                                className={cn(
+                                  "text-sm",
+                                  isDropdownActive
+                                    ? "text-primary-600 font-medium"
+                                    : "text-gray-500"
+                                )}
+                              >
+                                {dropdownLink.label}
+                              </Link>
+                            );
+                          }
+                        )}
                       </div>
                     </div>
                   );
@@ -297,10 +498,10 @@ const handleLogout = async () => {
                     href={link.href}
                     onClick={closeMenu}
                     className={cn(
-                      'text-lg font-medium transition-colors',
+                      "text-lg font-medium",
                       isActive
-                        ? 'text-primary-600'
-                        : 'text-gray-700 hover:text-primary-600'
+                        ? "text-primary-600"
+                        : "text-gray-700"
                     )}
                   >
                     {link.label}
@@ -308,20 +509,137 @@ const handleLogout = async () => {
                 );
               })}
 
-              {/* Mobile Consultation Button */}
+              {/* Mobile Consultation */}
               <Link
                 href="/consultation"
                 onClick={closeMenu}
-                className="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors text-center"
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
               >
                 Online Consultation
               </Link>
 
-              {/* Mobile User Auth Buttons */}
-              
+              {/* =================================================
+                  MOBILE AUTH
+              ================================================= */}
+              {!isLoading && (
+                <div className="pt-4 border-t border-gray-200">
 
-              {/* Mobile Admin Login/Logout Button */}
-              
+                  {!isAuthenticated ? (
+                    <Link
+                      href="/login"
+                      onClick={closeMenu}
+                      className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+                    >
+                      Login
+                    </Link>
+                  ) : (
+                    <div className="space-y-3">
+
+                      {/* Profile Info */}
+                      <div className="flex items-center gap-3 px-3 py-3 bg-gray-50 rounded-xl">
+                        <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                          </svg>
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">
+                            {user?.name}
+                          </p>
+
+                          <p className="text-xs text-gray-500 truncate">
+                            {user?.email}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* User Dashboard */}
+                      {!isAdmin && (
+                        <Link
+                          href="/user/dashboard"
+                          onClick={closeMenu}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
+                            />
+                          </svg>
+
+                          My Dashboard
+                        </Link>
+                      )}
+
+                      {/* Admin Dashboard */}
+                      {isAdmin && (
+                        <Link
+                          href="/admin/dashboard"
+                          onClick={closeMenu}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
+                            />
+                          </svg>
+
+                          Admin Dashboard
+                        </Link>
+                      )}
+
+                      {/* Logout */}
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                          />
+                        </svg>
+
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
           </div>
         </div>

@@ -31,12 +31,11 @@ export default function AdminDashboardPage() {
     }
 
     if (!isAdmin) {
-      router.replace("/");
-      return;
-    }
+    router.replace("/user/dashboard");
+  }
 
     fetchStats();
-  }, [user, authLoading, isAdmin]);
+  }, [user, authLoading, isAdmin,router]);
 
   const fetchStats = async () => {
     try {

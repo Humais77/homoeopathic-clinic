@@ -24,12 +24,12 @@ export default function LoginPage() {
   useEffect(() => {
   if (authLoading) return;
 
-  if (!user) return;
-
-  if (user.role === "ADMIN") {
-    router.replace("/admin/dashboard");
-  } else {
-    router.replace("/");
+  if (user) {
+    if (user.role === "ADMIN") {
+      router.replace("/admin/dashboard");
+    } else {
+      router.replace("/user/dashboard");
+    }
   }
 }, [user, authLoading, router]);
 
