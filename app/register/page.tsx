@@ -35,36 +35,36 @@ export default function RegisterPage() {
   }, [user, authLoading, router]);
 
   const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
-    e.preventDefault();
+  e: React.FormEvent
+) => {
+  e.preventDefault();
 
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
-    try {
-      const newUser = await register(
-        name,
-        email,
-        password,
-        phone
-      );
+  try {
+    const result = await register(
+      name,
+      email,
+      password,
+      phone
+    );
 
-      if (newUser.role === "ADMIN") {
-        router.replace("/admin/dashboard");
-      } else {
-        router.replace("/");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Registration failed"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    router.replace(
+      `/verify-email?email=${encodeURIComponent(
+        result.email
+      )}`
+    );
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Registration failed"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (authLoading || user) {
     return (

@@ -24,11 +24,14 @@ interface AuthContextType {
     password: string
   ) => Promise<User>;
   register: (
-    name: string,
-    email: string,
-    password: string,
-    phone?: string
-  ) => Promise<User>;
+  name: string,
+  email: string,
+  password: string,
+  phone?: string
+) => Promise<{
+  email: string;
+  requiresVerification: boolean;
+}>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -101,37 +104,53 @@ export function AuthProvider({
   };
 
   const register = async (
-    name: string,
-    email: string,
-    password: string,
-    phone?: string
-  ) => {
-    const response = await fetch("/api/auth/register", {
+  name: string,
+  email: string,
+  password: string,
+  phone?: string
+) => {
+  const response = await fetch(
+    "/api/auth/register",
+    {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json",
       },
+
       credentials: "include",
+
       body: JSON.stringify({
         name,
         email,
         password,
         phone,
       }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || "Registration failed"
-      );
     }
+  );
 
-    setUser(data.user);
+  const data = await response.json();
 
-    return data.user;
+  if (!response.ok) {
+    throw new Error(
+      data.error ||
+        "Registration failed"
+    );
+  }
+
+  /*
+   * DO NOT setUser here.
+   *
+   * User is not authenticated until email
+   * verification is complete.
+   */
+
+  return {
+    email: data.email,
+    requiresVerification:
+      data.requiresVerification,
   };
+};
 
   const logout = async () => {
     await fetch("/api/auth/logout", {

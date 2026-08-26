@@ -20,7 +20,8 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+const verified =
+  searchParams.get("verified");
   useEffect(() => {
   if (authLoading) return;
 
@@ -73,7 +74,12 @@ if (authLoading) {
     </div>
   );
 }
-
+{verified === "true" && (
+  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+    Your email has been verified successfully.
+    You can now sign in.
+  </div>
+)}
 if (user) {
   return null;
 }
