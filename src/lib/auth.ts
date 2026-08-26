@@ -5,9 +5,14 @@ import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 
 const AUTH_COOKIE = "session";
-const SESSION_DURATION = 60 * 60 * 24 * 7; // 7 days
 
-export type UserRole = "USER" | "ADMIN";
+const SESSION_DURATION =
+  60 * 60 * 24 * 7; // 7 days
+
+export type UserRole =
+  | "USER"
+  | "ADMIN"
+  | "DOCTOR";
 
 export type AuthUser = {
   id: string;
@@ -21,7 +26,9 @@ function getSecretKey(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
 
   if (!secret) {
-    throw new Error("AUTH_SECRET is not configured");
+    throw new Error(
+      "AUTH_SECRET is not configured"
+    );
   }
 
   return new TextEncoder().encode(secret);
@@ -30,45 +37,64 @@ function getSecretKey(): Uint8Array {
 /**
  * Create login session
  */
-export async function createSession(userId: string) {
-  const token = await new SignJWT({ userId })
-    .setProtectedHeader({ alg: "HS256" })
+export async function createSession(
+  userId: string
+) {
+  const token = await new SignJWT({
+    userId,
+  })
+    .setProtectedHeader({
+      alg: "HS256",
+    })
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DURATION}s`)
+    .setExpirationTime(
+      `${SESSION_DURATION}s`
+    )
     .sign(getSecretKey());
 
   const cookieStore = await cookies();
 
-  cookieStore.set(AUTH_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_DURATION,
-  });
+  cookieStore.set(
+    AUTH_COOKIE,
+    token,
+    {
+      httpOnly: true,
+      secure:
+        process.env.NODE_ENV ===
+        "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_DURATION,
+    }
+  );
 }
 
 /**
  * Get current session
  */
-export async function getSession(): Promise<{ userId: string } | null> {
+export async function getSession(): Promise<{
+  userId: string;
+} | null> {
   const cookieStore = await cookies();
 
-  const token = cookieStore.get(AUTH_COOKIE)?.value;
+  const token =
+    cookieStore.get(AUTH_COOKIE)?.value;
 
   if (!token) {
     return null;
   }
 
   try {
-    const { payload } = await jwtVerify(
-      token,
-      getSecretKey()
-    );
+    const { payload } =
+      await jwtVerify(
+        token,
+        getSecretKey()
+      );
 
     if (
       !payload.userId ||
-      typeof payload.userId !== "string"
+      typeof payload.userId !==
+        "string"
     ) {
       return null;
     }
@@ -87,31 +113,37 @@ export async function getSession(): Promise<{ userId: string } | null> {
 export async function clearSession() {
   const cookieStore = await cookies();
 
-  cookieStore.delete(AUTH_COOKIE);
+  cookieStore.delete(
+    AUTH_COOKIE
+  );
 }
 
 /**
  * Get logged-in user
  */
-export async function getCurrentUser(): Promise<AuthUser | null> {
-  const session = await getSession();
+export async function getCurrentUser(): Promise<
+  AuthUser | null
+> {
+  const session =
+    await getSession();
 
   if (!session) {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    where: {
-      id: session.userId,
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      phone: true,
-      role: true,
-    },
-  });
+  const user =
+    await prisma.user.findUnique({
+      where: {
+        id: session.userId,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        role: true,
+      },
+    });
 
   if (!user) {
     return null;
@@ -121,13 +153,27 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 }
 
 /**
+ * Backwards-compatible session helper.
+ *
+ * Existing API routes use this name.
+ */
+export async function getAdminFromSession(): Promise<
+  AuthUser | null
+> {
+  return getCurrentUser();
+}
+
+/**
  * Require any authenticated user
  */
 export async function requireAuth(): Promise<AuthUser> {
-  const user = await getCurrentUser();
+  const user =
+    await getCurrentUser();
 
   if (!user) {
-    throw new Error("Unauthorized");
+    throw new Error(
+      "Unauthorized"
+    );
   }
 
   return user;
@@ -137,19 +183,45 @@ export async function requireAuth(): Promise<AuthUser> {
  * Require ADMIN
  */
 export async function requireAdmin(): Promise<AuthUser> {
-  const user = await requireAuth();
+  const user =
+    await requireAuth();
 
   if (user.role !== "ADMIN") {
-    throw new Error("Forbidden");
+    throw new Error(
+      "Forbidden"
+    );
   }
 
   return user;
 }
+
+/**
+ * Require USER
+ */
 export async function requireUser(): Promise<AuthUser> {
-  const user = await requireAuth();
+  const user =
+    await requireAuth();
 
   if (user.role !== "USER") {
-    throw new Error("Forbidden");
+    throw new Error(
+      "Forbidden"
+    );
+  }
+
+  return user;
+}
+
+/**
+ * Require DOCTOR
+ */
+export async function requireDoctor(): Promise<AuthUser> {
+  const user =
+    await requireAuth();
+
+  if (user.role !== "DOCTOR") {
+    throw new Error(
+      "Forbidden"
+    );
   }
 
   return user;

@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -15,84 +10,186 @@ datasource db {
 enum UserRole {
   USER
   ADMIN
+  DOCTOR
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum MeetingType {
+  CLINIC
+  VIDEO
+  VOICE
+}
+
+enum MeetingStatus {
+  CREATED
+  WAITING
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum NotificationType {
+  APPOINTMENT_CREATED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_REMINDER
+  MEETING_READY
+  MEETING_STARTED
+  SYSTEM
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  email               String    @unique
-  name                String
-  passwordHash        String
-  phone               String?
-  role                UserRole  @default(USER)
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  phone        String?
+  role         UserRole @default(USER)
 
-  emailVerified       Boolean   @default(false)
-  verifyToken         String?   @unique
+  emailVerified        Boolean   @default(false)
+  verifyToken          String?   @unique
   verifyTokenExpiresAt DateTime?
 
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  appointments  Appointment[]
+  notifications Notification[]
+  doctor        Doctor?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
 
 model ConsultationInquiry {
-  id         String   @id @default(cuid())
-  name       String
-  email      String
-  treatment  String
-  message    String
-  status     String   @default("PENDING")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String @id @default(cuid())
+  name      String
+  email     String
+  treatment String
+  message   String
+  status    String @default("PENDING")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("consultation_inquiries")
 }
 
 model Treatment {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String  @id @default(cuid())
+  name        String  @unique
   description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("treatments")
 }
-model Appointment {
-  id             String   @id @default(cuid())
 
-  name           String
-  email          String
-  concerns       String
-
-  meetingType    String
-  appointmentDate DateTime
-  appointmentTime String
-
-  doctorId       String
-  doctor         Doctor   @relation(fields: [doctorId], references: [id])
-
-  status         String   @default("PENDING")
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("appointments")
-}
 model Doctor {
-  id             String   @id @default(cuid())
+  id             String  @id @default(cuid())
   name           String
   qualification  String
   specialization String?
   experience     String?
   description    String?
   image          String?
-  isActive       Boolean  @default(true)
+  isActive       Boolean @default(true)
 
-  appointments   Appointment[]
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  appointments  Appointment[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("doctors")
+}
+
+model Appointment {
+  id String @id @default(cuid())
+
+  name     String
+  email    String
+  concerns String
+
+  meetingType     MeetingType
+  appointmentDate DateTime
+  appointmentTime String
+
+  status AppointmentStatus @default(PENDING)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+
+  meeting       Meeting?
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([doctorId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Meeting {
+  id String @id @default(cuid())
+
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  roomName String @unique
+
+  type   MeetingType
+  status MeetingStatus @default(CREATED)
+
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("meetings")
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  doctorId String?
+  doctor   Doctor? @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([doctorId, isRead])
+  @@index([appointmentId])
+  @@index([createdAt])
+  @@map("notifications")
 }

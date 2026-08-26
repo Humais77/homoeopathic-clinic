@@ -10,16 +10,16 @@ export async function GET() {
       appointments,
       consultations,
       doctors,
-      services
+      services,
+      blogs
     ] = await Promise.all([
       prisma.appointment.count(),
-
       prisma.consultationInquiry.count(),
-
       prisma.doctor.count(),
-
       prisma.treatment.count(),
-
+      // Add blogs count if you have a Blog model
+      // prisma.blog.count() ?? 0,
+      Promise.resolve(0), // Temporary: return 0 for blogs
     ]);
 
     return NextResponse.json({
@@ -27,6 +27,7 @@ export async function GET() {
       consultations,
       doctors,
       services,
+      blogs,
     });
   } catch (error) {
     console.error("Dashboard error:", error);

@@ -387,21 +387,28 @@ export const CONTACT_APPOINTMENT = {
   title: "How would you like to meet?",
 
   meetingTypes: [
-    {
-      id: "clinic",
-      title: "Clinic Visit",
-      description:
-        "Visit our botanical sanctuary in person for a physical assessment.",
-      type: "clinic",
-    },
-    {
-      id: "online",
-      title: "Online Consultation",
-      description:
-        "Speak with our specialists from the comfort of your home via HD video.",
-      type: "online",
-    },
-  ],
+  {
+    id: "clinic",
+    title: "Clinic Visit",
+    description:
+      "Visit our clinic for an in-person consultation.",
+    type: "clinic",
+  },
+  {
+    id: "video",
+    title: "Video Consultation",
+    description:
+      "Speak with our specialist through a private video call.",
+    type: "video",
+  },
+  {
+    id: "voice",
+    title: "Voice Consultation",
+    description:
+      "Speak directly with our specialist through a private voice call.",
+    type: "voice",
+  },
+],
 
   specialist: {
     name: "Dr. Elena Vane",

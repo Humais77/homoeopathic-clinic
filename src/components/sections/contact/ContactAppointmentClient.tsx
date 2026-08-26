@@ -62,7 +62,19 @@ function VideoIcon() {
     </svg>
   );
 }
-
+function PhoneIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-9 w-9"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.08 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L9 10.73a16 16 0 0 0 4.27 4.27l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92Z" />
+    </svg>
+  );
+}
 function ChevronDown() {
   return (
     <svg
@@ -147,144 +159,164 @@ export function ContactAppointmentClient({
 
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-
+const [calendarDate, setCalendarDate] =
+  useState(() => new Date());
   /*
    * Calendar
    */
+  const calendarYear =
+  calendarDate.getFullYear();
+
+const calendarMonth =
+  calendarDate.getMonth();
   const days = useMemo(() => {
-    const year = 2026;
-    const month = 7; // August = 7 because JavaScript months start from 0
+  const year =
+    calendarDate.getFullYear();
 
-    const firstDay = new Date(
-      Date.UTC(year, month, 1)
-    ).getUTCDay();
+  const month =
+    calendarDate.getMonth();
 
-    const totalDays = new Date(
-      Date.UTC(year, month + 1, 0)
-    ).getUTCDate();
+  const firstDay = new Date(
+    Date.UTC(year, month, 1)
+  ).getUTCDay();
 
-    const previousMonthDays = new Date(
+  const totalDays = new Date(
+    Date.UTC(year, month + 1, 0)
+  ).getUTCDate();
+
+  const previousMonthDays =
+    new Date(
       Date.UTC(year, month, 0)
     ).getUTCDate();
 
-    const result: {
-      day: number;
-      currentMonth: boolean;
-    }[] = [];
+  const result: {
+    day: number;
+    currentMonth: boolean;
+  }[] = [];
 
-    // Previous month's days
-    for (let i = firstDay - 1; i >= 0; i--) {
-      result.push({
-        day: previousMonthDays - i,
-        currentMonth: false,
-      });
-    }
+  for (
+    let i = firstDay - 1;
+    i >= 0;
+    i--
+  ) {
+    result.push({
+      day:
+        previousMonthDays - i,
+      currentMonth: false,
+    });
+  }
 
-    // Current month's days
-    for (let day = 1; day <= totalDays; day++) {
-      result.push({
-        day,
-        currentMonth: true,
-      });
-    }
+  for (
+    let day = 1;
+    day <= totalDays;
+    day++
+  ) {
+    result.push({
+      day,
+      currentMonth: true,
+    });
+  }
 
-    // Next month's days
-    let nextMonthDay = 1;
+  let nextMonthDay = 1;
 
-    while (result.length < 42) {
-      result.push({
-        day: nextMonthDay,
-        currentMonth: false,
-      });
+  while (result.length < 42) {
+    result.push({
+      day: nextMonthDay,
+      currentMonth: false,
+    });
 
-      nextMonthDay++;
-    }
+    nextMonthDay++;
+  }
 
-    return result;
-  }, []);
+  return result;
+}, [calendarDate]);
 
   /*
    * Submit appointment
    */
   async function handleSubmit(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
-    e.preventDefault();
+  e: React.FormEvent<HTMLFormElement>
+) {
+  e.preventDefault();
 
-    setSubmitted(false);
+  setSubmitted(false);
 
-    if (!selectedDoctorId) {
-      alert("Please select a specialist.");
-      return;
-    }
-
-    if (!selectedSlot) {
-      alert("Please select an available time slot.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      /*
-       * August 2026
-       *
-       * JavaScript:
-       * 0 = January
-       * 7 = August
-       */
-      const appointmentDate = new Date(
-        2026,
-        7,
-        selectedDate
-      ).toISOString();
-
-      const response = await fetch("/api/appointments", {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-       body: JSON.stringify({
-  name: name.trim(),
-  email: email.trim(),
-  meetingType,
-  appointmentDate,
-  appointmentTime: selectedSlot,
-  concerns: concerns.trim(),
-  doctorId: selectedDoctorId,
-}),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to book appointment"
-        );
-      }
-
-      setSubmitted(true);
-
-      // Clear patient form
-      setName("");
-      setEmail("");
-      setConcerns("");
-
-      console.log("Appointment created:", data.appointment);
-    } catch (error) {
-      console.error("Appointment booking error:", error);
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
+  if (!selectedDoctorId) {
+    alert("Please select a specialist.");
+    return;
   }
+
+  if (!selectedSlot) {
+    alert("Please select an available time slot.");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const appointmentDate = new Date(
+      calendarYear,
+      calendarMonth,
+      selectedDate,
+      0,
+      0,
+      0,
+      0
+    ).toISOString();
+
+    const response = await fetch("/api/appointments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: name.trim(),
+        email: email.trim(),
+        meetingType,
+        appointmentDate,
+        appointmentTime: selectedSlot,
+        concerns: concerns.trim(),
+        doctorId: selectedDoctorId,
+      }),
+    });
+
+    // Handle non-JSON responses
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      console.error("JSON parse error:", jsonError);
+      throw new Error(
+        "Server returned an invalid response. Please try again."
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to book appointment"
+      );
+    }
+
+    setSubmitted(true);
+
+    // Clear patient form
+    setName("");
+    setEmail("");
+    setConcerns("");
+
+    console.log("Appointment created:", data.appointment);
+  } catch (error) {
+    console.error("Appointment booking error:", error);
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+}
 
   return (
     <div>
@@ -317,11 +349,13 @@ export function ContactAppointmentClient({
                     : "text-[#151568]"
                 }`}
               >
-                {type.type === "clinic" ? (
-                  <ClinicIcon />
-                ) : (
-                  <VideoIcon />
-                )}
+               {type.type === "clinic" ? (
+  <ClinicIcon />
+) : type.type === "video" ? (
+  <VideoIcon />
+) : (
+  <PhoneIcon />
+)}
               </div>
 
               <h3 className="text-base font-bold md:text-lg">
@@ -357,23 +391,55 @@ export function ContactAppointmentClient({
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h4 className="text-sm font-bold text-gray-700">
-                August 2026
-              </h4>
+  {calendarDate.toLocaleDateString(
+    "en-US",
+    {
+      month: "long",
+      year: "numeric",
+    }
+  )}
+</h4>
 
               <div className="flex gap-1">
-                <button
-                  type="button"
-                  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400"
-                >
-                  <ChevronLeft />
-                </button>
+               <button
+  type="button"
+  onClick={() => {
+    setCalendarDate(
+      (current) =>
+        new Date(
+          current.getFullYear(),
+          current.getMonth() - 1,
+          1
+        )
+    );
 
-                <button
-                  type="button"
-                  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400"
-                >
-                  <ChevronRight />
-                </button>
+    setSelectedDate(1);
+    setSubmitted(false);
+  }}
+  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400"
+>
+  <ChevronLeft />
+</button>
+
+<button
+  type="button"
+  onClick={() => {
+    setCalendarDate(
+      (current) =>
+        new Date(
+          current.getFullYear(),
+          current.getMonth() + 1,
+          1
+        )
+    );
+
+    setSelectedDate(1);
+    setSubmitted(false);
+  }}
+  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400"
+>
+  <ChevronRight />
+</button>
               </div>
             </div>
 
