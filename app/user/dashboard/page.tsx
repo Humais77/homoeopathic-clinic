@@ -1,8 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
+import { AppointmentCard } from "@/src/components/dashboard/AppointmentCard";
+
+type Appointment = {
+  id: string;
+  name: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  meetingType: string;
+  status: string;
+  doctor: {
+    name: string;
+    qualification: string;
+    specialization?: string | null;
+    image?: string | null;
+  };
+};
 
 export default function UserDashboardPage() {
   const router = useRouter();
@@ -13,12 +29,21 @@ export default function UserDashboardPage() {
     isAdmin,
   } = useAuth();
 
+  const [appointments, setAppointments] =
+    useState<Appointment[]>([]);
+
+  const [appointmentsLoading, setAppointmentsLoading] =
+    useState(true);
+
+  const [appointmentsError, setAppointmentsError] =
+    useState("");
+
+  /*
+   * Redirect / authentication
+   */
   useEffect(() => {
     if (isLoading) return;
 
-    /*
-     * Not logged in
-     */
     if (!user) {
       router.replace(
         "/login?redirect=/user/dashboard"
@@ -26,23 +51,76 @@ export default function UserDashboardPage() {
       return;
     }
 
-    /*
-     * Admin is NOT allowed to use user dashboard
-     */
     if (isAdmin) {
       router.replace("/admin/dashboard");
     }
   }, [user, isLoading, isAdmin, router]);
 
+  /*
+   * Load user's appointments
+   */
+  useEffect(() => {
+    if (isLoading || !user || isAdmin) {
+      return;
+    }
+
+    async function loadAppointments() {
+      try {
+        setAppointmentsLoading(true);
+        setAppointmentsError("");
+
+        const response = await fetch(
+          "/api/user/appointments",
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              "Unable to load appointments."
+          );
+        }
+
+        setAppointments(
+          data.appointments || []
+        );
+      } catch (error) {
+        console.error(
+          "Load appointments error:",
+          error
+        );
+
+        setAppointmentsError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load appointments."
+        );
+      } finally {
+        setAppointmentsLoading(false);
+      }
+    }
+
+    loadAppointments();
+  }, [user, isLoading, isAdmin]);
+
+  /*
+   * Loading authentication
+   */
   if (
     isLoading ||
     !user ||
     isAdmin
   ) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
 
           <p className="mt-4 text-gray-600">
             Loading...
@@ -55,8 +133,9 @@ export default function UserDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <section className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      <section className="border-b bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">
             My Dashboard
           </h1>
@@ -67,16 +146,15 @@ export default function UserDashboardPage() {
         </div>
       </section>
 
-      {/* Dashboard */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
         {/* User Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div className="flex items-center gap-4">
 
-            <div className="w-16 h-16 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center">
+        <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-primary-700">
               <svg
-                className="w-8 h-8"
+                className="h-8 w-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -100,7 +178,7 @@ export default function UserDashboardPage() {
               </p>
 
               {user.phone && (
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="mt-1 text-sm text-gray-500">
                   {user.phone}
                 </p>
               )}
@@ -108,41 +186,116 @@ export default function UserDashboardPage() {
           </div>
         </div>
 
-        {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* =========================================
+            MY APPOINTMENTS
+        ========================================= */}
 
-          {/* Appointments */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+        <section className="mb-8">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-[#10105c]">
+                My Appointments
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                View your upcoming and previous appointments.
+              </p>
             </div>
 
-            <h3 className="text-lg font-semibold">
-              My Appointments
-            </h3>
-
-            <p className="text-sm text-gray-500 mt-1">
-              View and manage your appointments.
-            </p>
+            <span className="rounded-full bg-[#151568] px-4 py-2 text-sm font-semibold text-white">
+              {appointments.length}
+            </span>
           </div>
 
+          {/* Loading */}
+
+          {appointmentsLoading && (
+            <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#3da449]" />
+
+              <p className="mt-3 text-sm text-gray-500">
+                Loading appointments...
+              </p>
+            </div>
+          )}
+
+          {/* Error */}
+
+          {!appointmentsLoading &&
+            appointmentsError && (
+              <div className="rounded-2xl border border-red-100 bg-red-50 p-6">
+                <p className="font-semibold text-red-700">
+                  Unable to load appointments
+                </p>
+
+                <p className="mt-1 text-sm text-red-600">
+                  {appointmentsError}
+                </p>
+              </div>
+            )}
+
+          {/* No appointments */}
+
+          {!appointmentsLoading &&
+            !appointmentsError &&
+            appointments.length === 0 && (
+              <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-sm">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+                  <svg
+                    className="h-7 w-7 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+
+                <h3 className="mt-4 text-lg font-semibold text-gray-900">
+                  No appointments yet
+                </h3>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Your booked appointments will appear here.
+                </p>
+              </div>
+            )}
+
+          {/* Appointment List */}
+
+          {!appointmentsLoading &&
+            !appointmentsError &&
+            appointments.length > 0 && (
+              <div className="space-y-4">
+                {appointments.map(
+                  (appointment) => (
+                    <AppointmentCard
+                      key={appointment.id}
+                      appointment={appointment}
+                    />
+                  )
+                )}
+              </div>
+            )}
+        </section>
+
+        {/* =========================================
+            DASHBOARD CARDS
+        ========================================= */}
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+
           {/* Consultations */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center mb-4">
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-green-600">
               <svg
-                className="w-6 h-6"
+                className="h-6 w-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -160,16 +313,17 @@ export default function UserDashboardPage() {
               My Consultations
             </h3>
 
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="mt-1 text-sm text-gray-500">
               View your consultation requests.
             </p>
           </div>
 
           {/* Profile */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
               <svg
-                className="w-6 h-6"
+                className="h-6 w-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -187,11 +341,10 @@ export default function UserDashboardPage() {
               My Profile
             </h3>
 
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="mt-1 text-sm text-gray-500">
               Manage your account information.
             </p>
           </div>
-
         </div>
       </main>
     </div>

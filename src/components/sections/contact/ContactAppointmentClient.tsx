@@ -230,7 +230,36 @@ const calendarMonth =
 
   return result;
 }, [calendarDate]);
+  function createAppointmentDate(
+  year: number,
+  month: number,
+  day: number,
+  time: string
+) {
+  const [timePart, modifier] = time.split(" ");
 
+  let [hours, minutes] = timePart
+    .split(":")
+    .map(Number);
+
+  if (modifier === "PM" && hours !== 12) {
+    hours += 12;
+  }
+
+  if (modifier === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  return new Date(
+    year,
+    month,
+    day,
+    hours,
+    minutes,
+    0,
+    0
+  ).toISOString();
+}
   /*
    * Submit appointment
    */
@@ -254,30 +283,27 @@ const calendarMonth =
   setLoading(true);
 
   try {
-    const appointmentDate = new Date(
-      calendarYear,
-      calendarMonth,
-      selectedDate,
-      0,
-      0,
-      0,
-      0
-    ).toISOString();
+   const appointmentDate = createAppointmentDate(
+  calendarYear,
+  calendarMonth,
+  selectedDate,
+  selectedSlot
+);
 
     const response = await fetch("/api/appointments", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        name: name.trim(),
-        email: email.trim(),
-        meetingType,
-        appointmentDate,
-        appointmentTime: selectedSlot,
-        concerns: concerns.trim(),
-        doctorId: selectedDoctorId,
-      }),
+     body: JSON.stringify({
+  name: name.trim(),
+  email: email.trim(),
+  meetingType,
+  appointmentDate,
+  appointmentTime: selectedSlot,
+  concerns: concerns.trim(),
+  doctorId: selectedDoctorId,
+}),
     });
 
     // Handle non-JSON responses
