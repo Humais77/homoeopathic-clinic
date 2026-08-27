@@ -5,6 +5,7 @@ import {
   VideoConference,
   RoomAudioRenderer,
   ControlBar,
+  AudioConference,
 } from "@livekit/components-react";
 
 
@@ -144,8 +145,12 @@ export function MeetingRoom({
       >
         <div className="flex h-full flex-col">
           <div className="flex-1">
-            <VideoConference />
-          </div>
+  {data.meetingType === "VIDEO" ? (
+    <VideoConference />
+  ) : (
+    <AudioConference />
+  )}
+</div>
 
           <ControlBar />
 

@@ -3,9 +3,7 @@ import {
   NextResponse,
 } from "next/server";
 
-import {
-  prisma,
-} from "@/src/lib/prisma";
+import { prisma } from "@/src/lib/prisma";
 
 import {
   createMeetingToken,
@@ -15,6 +13,10 @@ import {
 import {
   getAdminFromSession,
 } from "@/src/lib/auth";
+
+import {
+  ensureAppointmentMeeting,
+} from "@/src/lib/appointment-meeting";
 
 type Context = {
   params: Promise<{
@@ -51,7 +53,6 @@ export async function POST(
         },
 
         include: {
-          meeting: true,
           doctor: {
             include: {
               user: true,
@@ -63,8 +64,7 @@ export async function POST(
     if (!appointment) {
       return NextResponse.json(
         {
-          message:
-            "Appointment not found.",
+          message: "Appointment not found.",
         },
         {
           status: 404,
@@ -73,8 +73,7 @@ export async function POST(
     }
 
     if (
-      appointment.status !==
-      "CONFIRMED"
+      appointment.status !== "CONFIRMED"
     ) {
       return NextResponse.json(
         {
@@ -87,14 +86,14 @@ export async function POST(
       );
     }
 
+    // Clinic appointments don't use LiveKit
     if (
-      appointment.meetingType ===
-      "CLINIC"
+      appointment.meetingType === "CLINIC"
     ) {
       return NextResponse.json(
         {
           message:
-            "This appointment does not have an online meeting.",
+            "This appointment is a clinic visit and does not have an online meeting.",
         },
         {
           status: 400,
@@ -102,63 +101,40 @@ export async function POST(
       );
     }
 
-    if (!appointment.meeting) {
-      return NextResponse.json(
-        {
-          message:
-            "Meeting room has not been created yet.",
-        },
-        {
-          status: 404,
-        }
-      );
-    }
-
     /*
-     * Authorization
-     *
-     * ADMIN -> allowed
-     * DOCTOR -> only assigned doctor
-     * USER -> only their appointment
+     * ----------------------------------------------------
+     * AUTHORIZATION
+     * ----------------------------------------------------
      */
 
     let allowed = false;
 
-    if (
-      session.role === "ADMIN"
-    ) {
+    // ADMIN can join any meeting
+    if (session.role === "ADMIN") {
       allowed = true;
     }
 
-    if (
-      session.role === "DOCTOR"
-    ) {
+    // DOCTOR can only join their own appointments
+    if (session.role === "DOCTOR") {
       allowed =
         appointment.doctor.userId ===
         session.id;
     }
 
-    if (
-      session.role === "USER"
-    ) {
+    // USER can only join their appointment
+    if (session.role === "USER") {
       allowed =
         appointment.userId ===
         session.id;
     }
 
     /*
-     * Existing legacy appointments may
-     * not have userId.
-     *
-     * In that case we can additionally
-     * verify email.
+     * Legacy appointment support
      */
-
     if (
       session.role === "USER" &&
       !appointment.userId &&
-      session.email !==
-        appointment.email
+      session.email !== appointment.email
     ) {
       allowed = false;
     }
@@ -176,10 +152,40 @@ export async function POST(
     }
 
     /*
-     * Join window:
+     * ----------------------------------------------------
+     * ENSURE MEETING EXISTS
+     * ----------------------------------------------------
      *
-     * 10 minutes before appointment
-     * until 2 hours after appointment.
+     * This fixes the problem where an appointment was
+     * manually changed to CONFIRMED in the database.
+     *
+     * It creates:
+     *
+     * 1. LiveKit room
+     * 2. Prisma Meeting record
+     */
+
+    const meeting =
+      await ensureAppointmentMeeting(
+        appointment.id
+      );
+
+    if (!meeting) {
+      return NextResponse.json(
+        {
+          message:
+            "Unable to create online meeting.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+
+    /*
+     * ----------------------------------------------------
+     * JOIN WINDOW
+     * ----------------------------------------------------
      */
 
     const appointmentStart =
@@ -195,9 +201,7 @@ export async function POST(
       appointmentStart +
       2 * 60 * 60 * 1000;
 
-    if (
-      now < earliestJoin
-    ) {
+    if (now < earliestJoin) {
       return NextResponse.json(
         {
           message:
@@ -213,9 +217,7 @@ export async function POST(
       );
     }
 
-    if (
-      now > latestJoin
-    ) {
+    if (now > latestJoin) {
       return NextResponse.json(
         {
           message:
@@ -227,13 +229,18 @@ export async function POST(
       );
     }
 
+    /*
+     * ----------------------------------------------------
+     * CREATE LIVEKIT TOKEN
+     * ----------------------------------------------------
+     */
+
     const identity =
       `${session.role.toLowerCase()}-${session.id}`;
 
     const token =
       await createMeetingToken({
-        roomName:
-          appointment.meeting.roomName,
+        roomName: meeting.roomName,
 
         identity,
 
@@ -247,10 +254,14 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
+
       serverUrl: livekitHost,
+
       token,
+
       roomName:
-        appointment.meeting.roomName,
+        meeting.roomName,
+
       meetingType:
         appointment.meetingType,
     });
@@ -263,7 +274,9 @@ export async function POST(
     return NextResponse.json(
       {
         message:
-          "Unable to join meeting.",
+          error instanceof Error
+            ? error.message
+            : "Unable to join meeting.",
       },
       {
         status: 500,

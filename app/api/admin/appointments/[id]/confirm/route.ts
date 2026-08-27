@@ -14,6 +14,7 @@ import {
 import {
   scheduleAppointmentReminders,
 } from "@/src/lib/inngest/scheduleAppointmentReminders";
+import { ensureAppointmentMeeting } from "@/src/lib/appointment-meeting";
 type Context = {
   params: Promise<{
     id: string;
@@ -69,75 +70,47 @@ export async function POST(
       );
     }
 
-    if (
-      appointment.meetingType ===
-      "CLINIC"
-    ) {
-      const updated =
-        await prisma.appointment.update({
-          where: {
-            id,
-          },
-          data: {
-            status: "CONFIRMED",
-          },
-        });
-
-      return NextResponse.json({
-        success: true,
-        appointment: updated,
-      });
-    }
-
-    const roomName =
-      `appointment-${appointment.id}`;
-
-    await roomService.createRoom({
-      name: roomName,
-      emptyTimeout: 10 * 60,
-      maxParticipants: 10,
+    if (appointment.meetingType === "CLINIC") {
+  const updated =
+    await prisma.appointment.update({
+      where: {
+        id,
+      },
+      data: {
+        status: "CONFIRMED",
+      },
     });
 
-    const meeting =
-      await prisma.meeting.upsert({
-        where: {
-          appointmentId:
-            appointment.id,
-        },
+  await scheduleAppointmentReminders(
+    appointment.id,
+    appointment.appointmentDate
+  );
 
-        create: {
-          appointmentId:
-            appointment.id,
-          roomName,
-          type:
-            appointment.meetingType,
-          status: "CREATED",
-        },
+  return NextResponse.json({
+    success: true,
+    appointment: updated,
+  });
+}
 
-        update: {
-          roomName,
-          type:
-            appointment.meetingType,
-          status: "CREATED",
-        },
-      });
+const meeting =
+  await ensureAppointmentMeeting(
+    appointment.id
+  );
 
-    const updated =
-      await prisma.appointment.update({
-        where: {
-          id,
-        },
-
-        data: {
-          status: "CONFIRMED",
-        },
-
-        include: {
-          doctor: true,
-          user: true,
-          meeting: true,
-        },
-      });
+const updated =
+  await prisma.appointment.update({
+    where: {
+      id,
+    },
+    data: {
+      status: "CONFIRMED",
+    },
+    include: {
+      doctor: true,
+      user: true,
+      meeting: true,
+    },
+  });
       await scheduleAppointmentReminders(
   appointment.id,
   appointment.appointmentDate
