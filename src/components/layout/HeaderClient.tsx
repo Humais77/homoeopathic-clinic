@@ -129,9 +129,9 @@ export function HeaderClient() {
               <Image
                 src="/images/Logo.png"
                 alt="Heal By Nature"
-                width={50}
-                height={50}
-                className="h-12 w-12 object-contain"
+                width={70}
+                height={70}
+                className="h-[107px] w-[106px] object-contain"
                 priority
               />
             </Link>
@@ -139,7 +139,7 @@ export function HeaderClient() {
             {/* =================================================
                 DESKTOP NAVIGATION
             ================================================= */}
-            <nav className="hidden lg:flex items-center gap-8">
+            <nav className="hidden lg:flex items-center gap-8 ml-auto mr-8">
               {NAV_LINKS.map((link) => {
                 if (link.href === "/about") {
                   return (
