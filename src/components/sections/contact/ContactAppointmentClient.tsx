@@ -31,6 +31,7 @@ type Props = {
   doctors: Doctor[];
   slots: string[];
   form: FormData;
+  isAuthenticated: boolean;
 };
 
 function ClinicIcon() {
@@ -134,6 +135,7 @@ export function ContactAppointmentClient({
   doctors,
   slots,
   form,
+   isAuthenticated,
 }: Props) {
   const [meetingType, setMeetingType] = useState(
     meetingTypes[0]?.id || "clinic"
@@ -267,7 +269,11 @@ const calendarMonth =
   e: React.FormEvent<HTMLFormElement>
 ) {
   e.preventDefault();
-
+if (!isAuthenticated) {
+    window.location.href =
+      "/login?redirect=/contact";
+    return;
+  }
   setSubmitted(false);
 
   if (!selectedDoctorId) {
@@ -752,18 +758,20 @@ const calendarMonth =
           </button>
 
           <button
-            type="submit"
-            disabled={
-              loading ||
-              doctors.length === 0 ||
-              !selectedDoctorId ||
-              !selectedSlot
-            }
+  type="submit"
+  disabled={
+    loading ||
+    doctors.length === 0 ||
+    !selectedDoctorId ||
+    !selectedSlot
+  }
             className="h-11 rounded-xl bg-[#3da449] px-8 text-sm font-bold text-white transition hover:bg-[#328d3e] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading
-              ? "Booking..."
-              : "Book Appointment"}
+  ? "Booking..."
+  : isAuthenticated
+    ? "Book Appointment"
+    : "Login to Book Appointment"}
           </button>
         </div>
       </form>
