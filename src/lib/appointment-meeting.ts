@@ -1,5 +1,3 @@
-// src/lib/appointment-meeting.ts
-
 import { prisma } from "@/src/lib/prisma";
 import { roomService } from "@/src/lib/meeting";
 
@@ -20,7 +18,8 @@ export async function ensureAppointmentMeeting(
     throw new Error("Appointment not found.");
   }
 
-  // Clinic visits do NOT need LiveKit
+  // Physical clinic appointment
+  // does not need LiveKit.
   if (appointment.meetingType === "CLINIC") {
     return null;
   }
@@ -29,10 +28,7 @@ export async function ensureAppointmentMeeting(
     `appointment-${appointment.id}`;
 
   /*
-   * Always make sure the LiveKit room exists.
-   *
-   * If it already exists, LiveKit will throw.
-   * We safely ignore that error.
+   * Make sure the LiveKit room exists.
    */
   try {
     await roomService.createRoom({
@@ -48,27 +44,22 @@ export async function ensureAppointmentMeeting(
   }
 
   /*
-   * Make sure the Meeting database record exists.
+   * Create the database meeting record.
    *
-   * upsert is important because:
-   *
-   * - appointment may already have a meeting
-   * - appointment may have been manually confirmed
-   * - multiple users may try to join
+   * Upsert prevents duplicate Meeting records
+   * if two requests happen at nearly the same time.
    */
   const meeting =
     await prisma.meeting.upsert({
       where: {
-        appointmentId: appointment.id,
+        appointmentId,
       },
-
       create: {
-        appointmentId: appointment.id,
+        appointmentId,
         roomName,
         type: appointment.meetingType,
         status: "CREATED",
       },
-
       update: {
         roomName,
         type: appointment.meetingType,

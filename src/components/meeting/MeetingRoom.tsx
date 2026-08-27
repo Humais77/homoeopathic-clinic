@@ -2,17 +2,21 @@
 
 import {
   LiveKitRoom,
-  VideoConference,
+  ParticipantTile,
   RoomAudioRenderer,
-  ControlBar,
-  AudioConference,
+  useTracks,
+  useLocalParticipant,
 } from "@livekit/components-react";
 
+import {
+  Track,
+} from "livekit-client";
 
 import {
   useEffect,
   useState,
 } from "react";
+import { MeetingInterface } from "./MeetingInterface";
 
 type Props = {
   appointmentId: string;
@@ -31,9 +35,7 @@ export function MeetingRoom({
   appointmentId,
 }: Props) {
   const [data, setData] =
-    useState<MeetingResponse | null>(
-      null
-    );
+    useState<MeetingResponse | null>(null);
 
   const [error, setError] =
     useState("");
@@ -92,7 +94,7 @@ export function MeetingRoom({
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-white">
+      <div className="flex min-h-screen items-center justify-center bg-[#050d32] text-white">
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/30 border-t-white" />
 
@@ -106,8 +108,8 @@ export function MeetingRoom({
 
   if (error || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
+      <div className="flex min-h-screen items-center justify-center bg-[#050d32] px-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
           <h1 className="text-xl font-bold text-red-600">
             Unable to Join Meeting
           </h1>
@@ -131,32 +133,21 @@ export function MeetingRoom({
   }
 
   return (
-    <div className="min-h-screen">
-      <LiveKitRoom
-        token={data.token}
-        serverUrl={data.serverUrl}
-        connect
-        audio
-        video={
-          data.meetingType ===
-          "VIDEO"
-        }
-        className="h-screen"
-      >
-        <div className="flex h-full flex-col">
-          <div className="flex-1">
-  {data.meetingType === "VIDEO" ? (
-    <VideoConference />
-  ) : (
-    <AudioConference />
-  )}
-</div>
+    <LiveKitRoom
+      token={data.token}
+      serverUrl={data.serverUrl}
+      connect
+      audio
+      video={
+        data.meetingType === "VIDEO"
+      }
+      className="min-h-screen"
+    >
+      <MeetingInterface
+        meetingType={data.meetingType}
+      />
 
-          <ControlBar />
-
-          <RoomAudioRenderer />
-        </div>
-      </LiveKitRoom>
-    </div>
+      <RoomAudioRenderer />
+    </LiveKitRoom>
   );
 }

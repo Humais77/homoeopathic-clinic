@@ -4,9 +4,6 @@ import {
 } from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
-import {
-  roomService,
-} from "@/src/lib/meeting";
 
 import {
   sendNotification,
@@ -71,15 +68,14 @@ export async function POST(
     }
 
     if (appointment.meetingType === "CLINIC") {
-  const updated =
-    await prisma.appointment.update({
-      where: {
-        id,
-      },
-      data: {
-        status: "CONFIRMED",
-      },
-    });
+  const updated = await prisma.appointment.update({
+    where: {
+      id,
+    },
+    data: {
+      status: "CONFIRMED",
+    },
+  });
 
   await scheduleAppointmentReminders(
     appointment.id,
@@ -89,29 +85,29 @@ export async function POST(
   return NextResponse.json({
     success: true,
     appointment: updated,
+    meeting: null,
   });
 }
 
-const meeting =
-  await ensureAppointmentMeeting(
-    appointment.id
-  );
+const meeting = await ensureAppointmentMeeting(
+  appointment.id
+);
 
-const updated =
-  await prisma.appointment.update({
-    where: {
-      id,
-    },
-    data: {
-      status: "CONFIRMED",
-    },
-    include: {
-      doctor: true,
-      user: true,
-      meeting: true,
-    },
-  });
-      await scheduleAppointmentReminders(
+const updated = await prisma.appointment.update({
+  where: {
+    id,
+  },
+  data: {
+    status: "CONFIRMED",
+  },
+  include: {
+    doctor: true,
+    user: true,
+    meeting: true,
+  },
+});
+
+await scheduleAppointmentReminders(
   appointment.id,
   appointment.appointmentDate
 );
