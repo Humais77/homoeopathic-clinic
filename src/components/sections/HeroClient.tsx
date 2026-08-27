@@ -5,92 +5,117 @@ import Link from 'next/link';
 
 export function HeroClient() {
   return (
-    <section className="relative overflow-hidden from-white via-primary-50/30 to-white">
-      <div className="container mx-auto px-4 max-w-7xl">
-        <div className="flex flex-col lg:flex-row items-center gap-12 py-12 lg:py-20">
+    <section className="relative overflow-hidden bg-white">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Hero Content */}
+        <div className="grid items-center gap-8 py-10 lg:grid-cols-2 lg:gap-4 lg:py-14 lg:mt-[-50px]">
+          
           {/* Left Content */}
-          <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight">
-              <span className="text-gray-900">Natural Healing.</span>
-              <br />
-              <span className="text-primary-600">Trusted Care.</span>
-              <br />
-              <span className="text-gray-900">Better Health.</span>
+          <div className="relative z-10 text-center lg:text-left">
+            <h1 className="font-bold leading-[1.08] tracking-tight">
+              <span className="block text-4xl text-blue-950 sm:text-5xl lg:text-5xl xl:text-6xl">
+                Natural Healing.
+              </span>
+
+              <span className="mt-1 block text-4xl text-blue-950 sm:text-5xl lg:text-5xl xl:text-6xl">
+                Trusted Care.
+              </span>
+
+              <span className="mt-1 block text-4xl text-green-600 sm:text-5xl lg:text-5xl xl:text-6xl">
+                Better Health.
+              </span>
             </h1>
 
-            <p className="mt-6 text-base sm:text-lg text-gray-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+            <p className="mx-auto mt-5 max-w-xl text-sm leading-relaxed text-gray-600 sm:text-base lg:mx-0">
               Experience personalized homeopathic treatment tailored to your
-              genetic blueprint. We blend traditional wisdom with modern science to
-              restore your body's natural balance.
+              genetic blueprint. We blend traditional wisdom with modern science
+              to restore your body's natural balance.
             </p>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            {/* Buttons */}
+            <div className="mt-7 flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
               <Link
                 href="/appointment"
-                className="inline-flex items-center justify-center px-8 py-3.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-all duration-200 shadow-lg hover:shadow-primary-500/40 hover:scale-105"
+                className="inline-flex items-center justify-center rounded-xl bg-green-600 px-7 py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-green-700 hover:shadow-lg"
               >
                 Book Appointment
               </Link>
+
               <Link
                 href="/contact"
-                className="inline-flex items-center justify-center px-8 py-3.5 bg-secondary-600 text-white font-semibold rounded-lg hover:bg-secondary-700 transition-all duration-200 shadow-lg hover:shadow-secondary-500/40 hover:scale-105"
+                className="inline-flex items-center justify-center rounded-xl bg-blue-950 px-7 py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-blue-900 hover:shadow-lg"
               >
                 Emergency Contact Us
               </Link>
             </div>
-
-            {/* Stats */}
-            <div className="mt-12 flex flex-wrap gap-8 justify-center lg:justify-start">
-              <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-primary-600">500+</div>
-                <div className="text-sm text-gray-500 font-medium">Doctors</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-primary-600">10+</div>
-                <div className="text-sm text-gray-500 font-medium">Happy Patients</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-primary-600">95%</div>
-                <div className="text-sm text-gray-500 font-medium">Satisfaction Rate</div>
-              </div>
-            </div>
-
-            {/* Badge */}
-            <div className="mt-6 inline-flex items-center gap-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-full text-sm font-medium">
-              <span className="w-2 h-2 bg-primary-600 rounded-full animate-pulse"></span>
-              Certified Homeopathic
-            </div>
           </div>
 
-          {/* Right Image */}
-          <div className="flex-1 flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-md lg:max-w-lg xl:max-w-xl">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                {/* Replace src with your image path */}
-                <Image
-                  src="/images/Hero-bg.png"
-                  alt="Homoeopathic Doctor"
-                  width={600}
-                  height={500}
-                  className="w-full h-auto object-cover"
-                  priority
-                />
-                
-                {/* Decorative overlay */}
-                <div className="absolute inset-0  from-black/10 to-transparent"></div>
-              </div>
-
-              {/* Decorative Elements */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary-500/10 rounded-full blur-2xl"></div>
-              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-secondary-500/10 rounded-full blur-2xl"></div>
+          {/* Right Doctors Image */}
+          <div className="relative flex items-end justify-center lg:justify-end">
+            <div className="relative w-full max-w-md sm:max-w-lg lg:max-w-xl">
+              <Image
+                src="/images/Hero-bg.png"
+                alt="Healthcare Professionals"
+                width={700}
+                height={600}
+                priority
+                className="h-auto w-full object-contain"
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Background Decorative Elements */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl -z-10"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary-500/5 rounded-full blur-3xl -z-10"></div>
+        {/* Stats Bar */}
+        <div className="relative z-20 mx-auto -mt-2 mb-6 max-w-6xl rounded-2xl bg-blue-950 px-6 py-6 shadow-xl sm:px-8 lg:-mt-6 lg:px-10 lg:py-7">
+          <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4 md:gap-4">
+            
+            {/* Stat 1 */}
+            <div>
+              <div className="text-2xl font-bold text-white sm:text-3xl">
+                500+
+              </div>
+
+              <div className="mt-1 text-xs font-semibold uppercase tracking-wide text-gray-300 sm:text-sm">
+                Happy Patients
+              </div>
+            </div>
+
+            {/* Stat 2 */}
+            <div>
+              <div className="text-2xl font-bold text-white sm:text-3xl">
+                10+
+              </div>
+
+              <div className="mt-1 text-xs font-semibold text-gray-300 sm:text-sm">
+                Years Experience
+              </div>
+            </div>
+
+            {/* Stat 3 */}
+            <div>
+              <div className="text-2xl font-bold text-white sm:text-3xl">
+                95%
+              </div>
+
+              <div className="mt-1 text-xs font-semibold text-gray-300 sm:text-sm">
+                Satisfaction Rate
+              </div>
+            </div>
+
+            {/* Stat 4 */}
+            <div>
+              <div className="text-2xl font-bold text-white sm:text-3xl">
+                Doctors
+              </div>
+
+              <div className="mt-1 text-xs font-semibold text-gray-300 sm:text-sm">
+                Certified Homeopathic
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
