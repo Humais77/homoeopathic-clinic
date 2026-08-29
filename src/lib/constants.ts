@@ -386,14 +386,7 @@ export const CONTACT_CONNECTION = {
 export const CONTACT_APPOINTMENT = {
   title: "How would you like to meet?",
 
-  meetingTypes: [
-  {
-    id: "clinic",
-    title: "Clinic Visit",
-    description:
-      "Visit our clinic for an in-person consultation.",
-    type: "clinic",
-  },
+ meetingTypes: [
   {
     id: "video",
     title: "Video Consultation",
@@ -407,6 +400,13 @@ export const CONTACT_APPOINTMENT = {
     description:
       "Speak directly with our specialist through a private voice call.",
     type: "voice",
+  },
+  {
+    id: "clinic",
+    title: "Clinic Visit",
+    description:
+      "Visit our clinic for an in-person consultation.",
+    type: "clinic",
   },
 ],
 

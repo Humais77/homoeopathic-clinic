@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-
+import { useContactBooking } from "./ContactBookingProvider";
+import type { MeetingType as BookingMeetingType } from "./ContactBookingProvider";
 type MeetingType = {
   id: string;
   title: string;
@@ -25,9 +26,14 @@ type FormData = {
   emailPlaceholder: string;
   concernsPlaceholder: string;
 };
-
+type MeetingOption = {
+  id: BookingMeetingType;
+  title: string;
+  description: string;
+  type: string;
+};
 type Props = {
-  meetingTypes: MeetingType[];
+  meetingTypes: MeetingOption[];
   doctors: Doctor[];
   slots: string[];
   form: FormData;
@@ -137,9 +143,8 @@ export function ContactAppointmentClient({
   form,
    isAuthenticated,
 }: Props) {
-  const [meetingType, setMeetingType] = useState(
-    meetingTypes[0]?.id || "clinic"
-  );
+  const { meetingType, setMeetingType } =
+  useContactBooking();
 
   const [selectedDoctorId, setSelectedDoctorId] = useState(
     doctors[0]?.id || ""

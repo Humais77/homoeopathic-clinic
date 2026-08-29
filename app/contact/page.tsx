@@ -2,6 +2,7 @@ import { PageHero } from "@/src/components/sections/PageHero";
 import { ContactConnection } from "@/src/components/sections/contact/ContactConnection";
 import { ContactAppointment } from "@/src/components/sections/contact/ContactAppointment";
 import { ContactInfo } from "@/src/components/sections/contact/ContactInfo";
+import { ContactBookingProvider } from "@/src/components/sections/contact/ContactBookingProvider";
 
 export const metadata = {
   title: "Contact Us - Heal By Nature",
@@ -12,7 +13,6 @@ export const metadata = {
 export default function ContactPage() {
   return (
     <main>
-      {/* Hero */}
       <PageHero
         title="Get In Touch With Us"
         subtitle="Contact Us Now"
@@ -20,13 +20,12 @@ export default function ContactPage() {
         backgroundImage="/images/ContactUsHero.png"
       />
 
-      {/* How would you like to connect? */}
-      <ContactConnection />
+      <ContactBookingProvider>
+        <ContactConnection />
 
-      {/* Appointment booking */}
-      <ContactAppointment />
+        <ContactAppointment />
+      </ContactBookingProvider>
 
-      {/* Location / WhatsApp / Email */}
       <ContactInfo />
     </main>
   );

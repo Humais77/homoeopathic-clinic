@@ -1,7 +1,17 @@
+"use client";
+
 import { CONTACT_CONNECTION } from "@/src/lib/constants";
 import { ContactConnectionClient } from "./ContactConnectionClient";
+import { useContactBooking } from "./ContactBookingProvider";
 
 export function ContactConnection() {
+  const { meetingType } = useContactBooking();
+
+  // Hide the entire section for Clinic Visit
+  if (meetingType === "clinic") {
+    return null;
+  }
+
   return (
     <section className="bg-white py-10 md:py-12">
       <div className="mx-auto w-full max-w-7xl px-4">
@@ -16,7 +26,9 @@ export function ContactConnection() {
             </p>
           </div>
 
-          <ContactConnectionClient methods={CONTACT_CONNECTION.methods} />
+          <ContactConnectionClient
+            methods={CONTACT_CONNECTION.methods}
+          />
         </div>
       </div>
     </section>
