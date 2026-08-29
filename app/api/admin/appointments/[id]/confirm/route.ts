@@ -54,18 +54,23 @@ export async function POST(
     }
 
     if (
-      appointment.status === "CANCELLED"
-    ) {
-      return NextResponse.json(
-        {
-          message:
-            "Cancelled appointments cannot be confirmed.",
-        },
-        {
-          status: 400,
-        }
-      );
+  appointment.status ===
+    "CANCELLED" ||
+  appointment.status ===
+    "COMPLETED" ||
+  appointment.status ===
+    "NO_SHOW"
+) {
+  return NextResponse.json(
+    {
+      message:
+        "This appointment cannot be confirmed.",
+    },
+    {
+      status: 400,
     }
+  );
+}
 
     if (appointment.meetingType === "CLINIC") {
   const updated = await prisma.appointment.update({

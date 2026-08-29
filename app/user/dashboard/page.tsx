@@ -55,59 +55,65 @@ export default function UserDashboardPage() {
       router.replace("/admin/dashboard");
     }
   }, [user, isLoading, isAdmin, router]);
+ async function loadAppointments() {
+  try {
+    setAppointmentsLoading(true);
+    setAppointmentsError("");
 
+    const response = await fetch(
+      "/api/user/appointments",
+      {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          "Unable to load appointments."
+      );
+    }
+
+    setAppointments(
+      data.appointments || []
+    );
+  } catch (error) {
+    console.error(
+      "Load appointments error:",
+      error
+    );
+
+    setAppointmentsError(
+      error instanceof Error
+        ? error.message
+        : "Unable to load appointments."
+    );
+  } finally {
+    setAppointmentsLoading(false);
+  }
+}
   /*
    * Load user's appointments
    */
   useEffect(() => {
-    if (isLoading || !user || isAdmin) {
-      return;
-    }
+  if (
+    isLoading ||
+    !user ||
+    isAdmin
+  ) {
+    return;
+  }
 
-    async function loadAppointments() {
-      try {
-        setAppointmentsLoading(true);
-        setAppointmentsError("");
-
-        const response = await fetch(
-          "/api/user/appointments",
-          {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.message ||
-              "Unable to load appointments."
-          );
-        }
-
-        setAppointments(
-          data.appointments || []
-        );
-      } catch (error) {
-        console.error(
-          "Load appointments error:",
-          error
-        );
-
-        setAppointmentsError(
-          error instanceof Error
-            ? error.message
-            : "Unable to load appointments."
-        );
-      } finally {
-        setAppointmentsLoading(false);
-      }
-    }
-
-    loadAppointments();
-  }, [user, isLoading, isAdmin]);
+  loadAppointments();
+}, [
+  user,
+  isLoading,
+  isAdmin,
+]);
 
   /*
    * Loading authentication
@@ -267,21 +273,23 @@ export default function UserDashboardPage() {
             )}
 
           {/* Appointment List */}
-
-          {!appointmentsLoading &&
-            !appointmentsError &&
-            appointments.length > 0 && (
-              <div className="space-y-4">
-                {appointments.map(
-                  (appointment) => (
-                    <AppointmentCard
-                      key={appointment.id}
-                      appointment={appointment}
-                    />
-                  )
-                )}
-              </div>
-            )}
+{!appointmentsLoading &&
+  !appointmentsError &&
+  appointments.length > 0 && (
+    <div className="space-y-4">
+      {appointments.map(
+        (appointment) => (
+          <AppointmentCard
+            key={appointment.id}
+            appointment={appointment}
+            onAppointmentUpdated={
+              loadAppointments
+            }
+          />
+        )
+      )}
+    </div>
+  )}
         </section>
 
         {/* =========================================

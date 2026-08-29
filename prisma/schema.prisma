@@ -128,14 +128,28 @@ model Appointment {
 
   status AppointmentStatus @default(PENDING)
 
+  // User relationship
   userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  // Doctor relationship
   doctorId String
   doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
 
-  meeting       Meeting?
+  // Meeting
+  meeting Meeting?
+
+  // Notifications
   notifications Notification[]
+
+  // Cancellation information
+  cancelledAt DateTime?
+  cancelledBy String?
+  cancellationReason String?
+
+  // Only controls visibility on the user's dashboard.
+  // It does NOT delete the appointment.
+  userHiddenAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -144,6 +158,8 @@ model Appointment {
   @@index([doctorId])
   @@index([appointmentDate])
   @@index([status])
+  @@index([userHiddenAt])
+
   @@map("appointments")
 }
 
