@@ -13,13 +13,17 @@ import { Dropdown } from "./Dropdown";
 import { useAuth } from "@/src/context/AuthContext";
 
 export function HeaderClient() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] =
+    useState(false);
+
+  const [isProfileOpen, setIsProfileOpen] =
+    useState(false);
 
   const pathname = usePathname();
   const router = useRouter();
 
-  const profileRef = useRef<HTMLDivElement>(null);
+  const profileRef =
+    useRef<HTMLDivElement>(null);
 
   const {
     user,
@@ -27,37 +31,49 @@ export function HeaderClient() {
     isLoading,
     logout,
     isAdmin,
+    isDoctor,
+    isUser,
   } = useAuth();
 
-  /*
+  /**
    * Close profile dropdown when clicking outside
    */
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (
+      event: MouseEvent
+    ) => {
       if (
         profileRef.current &&
-        !profileRef.current.contains(event.target as Node)
+        !profileRef.current.contains(
+          event.target as Node
+        )
       ) {
         setIsProfileOpen(false);
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
     };
   }, []);
 
-  /*
-   * Close mobile menu when route changes
+  /**
+   * Close menus when route changes
    */
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsProfileOpen(false);
   }, [pathname]);
 
-  /*
+  /**
    * Lock body scroll when mobile menu is open
    */
   useEffect(() => {
@@ -72,19 +88,52 @@ export function HeaderClient() {
     };
   }, [isMobileMenuOpen]);
 
-  const isAboutActive = ABOUT_DROPDOWN_LINKS.some(
-    (link) => link.href === pathname
-  );
+  const isAboutActive =
+    ABOUT_DROPDOWN_LINKS.some(
+      (link) => link.href === pathname
+    );
 
   const toggleMenu = () => {
-    setIsMobileMenuOpen((prev) => !prev);
+    setIsMobileMenuOpen(
+      (previous) => !previous
+    );
   };
 
   const closeMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
-  /*
+  /**
+   * Get dashboard according to role
+   */
+  const getDashboardPath = () => {
+    if (isAdmin) {
+      return "/admin/dashboard";
+    }
+
+    if (isDoctor) {
+      return "/doctor/dashboard";
+    }
+
+    return "/user/dashboard";
+  };
+
+  /**
+   * Get dashboard label according to role
+   */
+  const getDashboardLabel = () => {
+    if (isAdmin) {
+      return "Admin Dashboard";
+    }
+
+    if (isDoctor) {
+      return "Doctor Dashboard";
+    }
+
+    return "My Dashboard";
+  };
+
+  /**
    * Logout
    */
   const handleLogout = async () => {
@@ -97,11 +146,13 @@ export function HeaderClient() {
     router.refresh();
   };
 
-  /*
+  /**
    * Profile click
    */
   const handleProfileClick = () => {
-    setIsProfileOpen((prev) => !prev);
+    setIsProfileOpen(
+      (previous) => !previous
+    );
   };
 
   return (
@@ -156,7 +207,8 @@ export function HeaderClient() {
                   );
                 }
 
-                const isActive = pathname === link.href;
+                const isActive =
+                  pathname === link.href;
 
                 return (
                   <Link
@@ -213,7 +265,9 @@ export function HeaderClient() {
                       {/* Profile Button */}
                       <button
                         type="button"
-                        onClick={handleProfileClick}
+                        onClick={
+                          handleProfileClick
+                        }
                         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         {/* User Icon */}
@@ -240,7 +294,8 @@ export function HeaderClient() {
                         <svg
                           className={cn(
                             "w-4 h-4 text-gray-500 transition-transform",
-                            isProfileOpen && "rotate-180"
+                            isProfileOpen &&
+                              "rotate-180"
                           )}
                           fill="none"
                           stroke="currentColor"
@@ -268,66 +323,46 @@ export function HeaderClient() {
                             <p className="text-xs text-gray-500 truncate mt-1">
                               {user?.email}
                             </p>
+
+                            {/* Role */}
+                            <p className="text-xs text-primary-600 font-medium mt-1 capitalize">
+                              {user?.role?.toLowerCase()}
+                            </p>
                           </div>
 
-                          {/* Normal User Dashboard */}
-                          {!isAdmin && (
-                            <Link
-                              href="/user/dashboard"
-                              onClick={() =>
-                                setIsProfileOpen(false)
-                              }
-                              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                          {/* Dashboard */}
+                          <Link
+                            href={getDashboardPath()}
+                            onClick={() =>
+                              setIsProfileOpen(
+                                false
+                              )
+                            }
+                            className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
-                                />
-                              </svg>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
+                              />
+                            </svg>
 
-                              My Dashboard
-                            </Link>
-                          )}
-
-                          {/* Admin Dashboard */}
-                          {isAdmin && (
-                            <Link
-                              href="/admin/dashboard"
-                              onClick={() =>
-                                setIsProfileOpen(false)
-                              }
-                              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-                            >
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
-                                />
-                              </svg>
-
-                              Admin Dashboard
-                            </Link>
-                          )}
+                            {getDashboardLabel()}
+                          </Link>
 
                           {/* Logout */}
                           <button
                             type="button"
-                            onClick={handleLogout}
+                            onClick={
+                              handleLogout
+                            }
                             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50"
                           >
                             <svg
@@ -400,7 +435,9 @@ export function HeaderClient() {
         >
           <div
             className="fixed top-0 right-0 h-full w-[85%] max-w-sm bg-white shadow-2xl overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
           >
             {/* Mobile Header */}
             <div className="flex justify-between items-center p-5 border-b border-gray-100">
@@ -443,7 +480,8 @@ export function HeaderClient() {
             <nav className="p-5 flex flex-col gap-5">
 
               {NAV_LINKS.map((link) => {
-                const isActive = pathname === link.href;
+                const isActive =
+                  pathname === link.href;
 
                 if (link.href === "/about") {
                   return (
@@ -456,7 +494,8 @@ export function HeaderClient() {
                         onClick={closeMenu}
                         className={cn(
                           "text-lg font-medium",
-                          isActive || isAboutActive
+                          isActive ||
+                            isAboutActive
                             ? "text-primary-600"
                             : "text-gray-700"
                         )}
@@ -466,15 +505,24 @@ export function HeaderClient() {
 
                       <div className="flex flex-col gap-2 pl-4 border-l-2 border-gray-200">
                         {ABOUT_DROPDOWN_LINKS.map(
-                          (dropdownLink) => {
+                          (
+                            dropdownLink
+                          ) => {
                             const isDropdownActive =
-                              pathname === dropdownLink.href;
+                              pathname ===
+                              dropdownLink.href;
 
                             return (
                               <Link
-                                key={dropdownLink.href}
-                                href={dropdownLink.href}
-                                onClick={closeMenu}
+                                key={
+                                  dropdownLink.href
+                                }
+                                href={
+                                  dropdownLink.href
+                                }
+                                onClick={
+                                  closeMenu
+                                }
                                 className={cn(
                                   "text-sm",
                                   isDropdownActive
@@ -482,7 +530,9 @@ export function HeaderClient() {
                                     : "text-gray-500"
                                 )}
                               >
-                                {dropdownLink.label}
+                                {
+                                  dropdownLink.label
+                                }
                               </Link>
                             );
                           }
@@ -548,7 +598,7 @@ export function HeaderClient() {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7 7H5a7 7 0 017-7z"
                             />
                           </svg>
                         </div>
@@ -561,63 +611,42 @@ export function HeaderClient() {
                           <p className="text-xs text-gray-500 truncate">
                             {user?.email}
                           </p>
+
+                          <p className="text-xs text-primary-600 font-medium capitalize mt-1">
+                            {user?.role?.toLowerCase()}
+                          </p>
                         </div>
                       </div>
 
-                      {/* User Dashboard */}
-                      {!isAdmin && (
-                        <Link
-                          href="/user/dashboard"
-                          onClick={closeMenu}
-                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
+                      {/* Dashboard */}
+                      <Link
+                        href={getDashboardPath()}
+                        onClick={closeMenu}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
                         >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
-                            />
-                          </svg>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
+                          />
+                        </svg>
 
-                          My Dashboard
-                        </Link>
-                      )}
-
-                      {/* Admin Dashboard */}
-                      {isAdmin && (
-                        <Link
-                          href="/admin/dashboard"
-                          onClick={closeMenu}
-                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
-                        >
-                          <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v6h8V3h-8zM3 21h8v-6H3v6z"
-                            />
-                          </svg>
-
-                          Admin Dashboard
-                        </Link>
-                      )}
+                        {getDashboardLabel()}
+                      </Link>
 
                       {/* Logout */}
                       <button
                         type="button"
-                        onClick={handleLogout}
+                        onClick={
+                          handleLogout
+                        }
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50"
                       >
                         <svg
