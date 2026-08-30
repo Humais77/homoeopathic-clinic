@@ -1,3 +1,5 @@
+// schema.prisma
+
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -180,6 +182,7 @@ model Meeting {
   externalMeetingId String?
   meetingUrl        String?
   hostUrl           String?
+  roomName          String?  // Added for LiveKit support (optional)
 
   type   MeetingType
   status MeetingStatus @default(CREATED)
@@ -193,6 +196,7 @@ model Meeting {
   @@index([provider])
   @@index([status])
   @@index([externalMeetingId])
+  @@index([roomName])
   @@map("meetings")
 }
 
