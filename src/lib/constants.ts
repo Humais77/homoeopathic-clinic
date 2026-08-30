@@ -422,7 +422,8 @@ export const CONTACT_APPOINTMENT = {
     "11:45 AM",
     "02:30 PM",
     "7:50 PM",
-    "8:35 PM"
+    "8:35 PM",
+    "12:56 PM"
   ],
 
   form: {

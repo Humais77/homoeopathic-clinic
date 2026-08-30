@@ -22,7 +22,6 @@ type AuthContextType = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-
   isAdmin: boolean;
   isDoctor: boolean;
   isUser: boolean;
@@ -36,14 +35,27 @@ type AuthContextType = {
     user?: AuthUser;
   }>;
 
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    phone?: string
+  ) => Promise<{
+    success: boolean;
+    message?: string;
+    email: string;
+    user?: AuthUser;
+  }>;
+
   logout: () => Promise<void>;
 
   refreshUser: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
+const AuthContext =
+  createContext<AuthContextType | undefined>(
+    undefined
+  );
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -52,19 +64,25 @@ type AuthProviderProps = {
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] =
+    useState<AuthUser | null>(null);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
 
   /**
    * Get currently logged-in user
    */
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch("/api/auth/me", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-      });
+      const response = await fetch(
+        "/api/auth/me",
+        {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        }
+      );
 
       if (!response.ok) {
         setUser(null);
@@ -117,10 +135,13 @@ export function AuthProvider({
         "/api/auth/login",
         {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json",
           },
+
           credentials: "include",
+
           body: JSON.stringify({
             email,
             password,
@@ -173,16 +194,89 @@ export function AuthProvider({
   };
 
   /**
+   * Register
+   */
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    phone?: string
+  ) => {
+    try {
+      setIsLoading(true);
+
+      const response = await fetch(
+        "/api/auth/register",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          credentials: "include",
+
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            phone: phone || null,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          message:
+            data?.message ||
+            "Registration failed.",
+          email,
+        };
+      }
+
+      return {
+        success: true,
+        message: data?.message,
+        email: data?.email || email,
+        user: data?.user,
+      };
+    } catch (error) {
+      console.error(
+        "Registration error:",
+        error
+      );
+
+      return {
+        success: false,
+        message:
+          "Something went wrong. Please try again.",
+        email,
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
    * Logout
    */
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      await fetch(
+        "/api/auth/logout",
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error(
+        "Logout error:",
+        error
+      );
     } finally {
       setUser(null);
     }
@@ -219,12 +313,11 @@ export function AuthProvider({
         user,
         isAuthenticated,
         isLoading,
-
         isAdmin,
         isDoctor,
         isUser,
-
         login,
+        register,
         logout,
         refreshUser,
       }}
@@ -238,7 +331,8 @@ export function AuthProvider({
  * Auth hook
  */
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
     throw new Error(

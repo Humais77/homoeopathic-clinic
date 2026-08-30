@@ -7,7 +7,6 @@ import { useContactBooking } from "./ContactBookingProvider";
 export function ContactConnection() {
   const { meetingType } = useContactBooking();
 
-  // Hide the entire section for Clinic Visit
   if (meetingType === "clinic") {
     return null;
   }

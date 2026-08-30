@@ -143,8 +143,11 @@ export function ContactAppointmentClient({
   form,
    isAuthenticated,
 }: Props) {
-  const { meetingType, setMeetingType } =
-  useContactBooking();
+  const {
+  meetingType,
+  setMeetingType,
+  connectionMethod,
+} = useContactBooking();
 
   const [selectedDoctorId, setSelectedDoctorId] = useState(
     doctors[0]?.id || ""
@@ -310,6 +313,10 @@ if (!isAuthenticated) {
   name: name.trim(),
   email: email.trim(),
   meetingType,
+  connectionMethod:
+    meetingType === "clinic"
+      ? null
+      : connectionMethod,
   appointmentDate,
   appointmentTime: selectedSlot,
   concerns: concerns.trim(),

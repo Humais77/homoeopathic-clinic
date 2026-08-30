@@ -1,226 +1,440 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
+import { NextResponse } from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
-import {
-  createAppointmentSchema,
-} from "@/src/lib/validations/appointment";
+import { getCurrentUser } from "@/src/lib/auth";
 
-import {
-  sendNotification,
-} from "@/src/lib/send-notification";
-import {
-  getAdminFromSession,
-} from "@/src/lib/auth";
+import { createZoomMeeting } from "@/src/lib/meetings/zoom";
+import { createGoogleMeet } from "@/src/lib/meetings/googleMeet";
 
-function normalizeMeetingType(
-  value: string
-) {
-  if (value === "online") {
-    return "VIDEO" as const;
-  }
+type ConnectionMethod = "zoom" | "google_meet" | null;
+type FrontendMeetingType = "clinic" | "video" | "voice";
 
-  if (value === "video") {
-    return "VIDEO" as const;
-  }
-
-  if (value === "voice") {
-    return "VOICE" as const;
-  }
-
-  return "CLINIC" as const;
-}
-
-export async function POST(
-  request: NextRequest
-) {
+export async function POST(request: Request) {
   try {
+    // ============================================================
+    // AUTHENTICATION
+    // ============================================================
+
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          message: "You must be logged in to book an appointment.",
+        },
+        { status: 401 }
+      );
+    }
+
+    // ============================================================
+    // READ REQUEST BODY
+    // ============================================================
+
     const body = await request.json();
 
-    const result =
-      createAppointmentSchema.safeParse(body);
+    const {
+      name,
+      email,
+      meetingType,
+      connectionMethod,
+      appointmentDate,
+      appointmentTime,
+      concerns,
+      doctorId,
+    } = body as {
+      name?: string;
+      email?: string;
+      meetingType?: FrontendMeetingType;
+      connectionMethod?: ConnectionMethod;
+      appointmentDate?: string;
+      appointmentTime?: string;
+      concerns?: string;
+      doctorId?: string;
+    };
 
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Invalid appointment information.",
-          errors:
-            result.error.flatten(),
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    const data = result.data;
-
-    const appointmentDate =
-      new Date(data.appointmentDate);
+    // ============================================================
+    // BASIC VALIDATION
+    // ============================================================
 
     if (
-      Number.isNaN(
-        appointmentDate.getTime()
-      )
+      !name ||
+      !email ||
+      !meetingType ||
+      !appointmentDate ||
+      !appointmentTime ||
+      !concerns ||
+      !doctorId
     ) {
       return NextResponse.json(
         {
-          success: false,
-          message:
-            "Invalid appointment date.",
+          message: "Please complete all required fields.",
         },
+        { status: 400 }
+      );
+    }
+
+    // ============================================================
+    // VALIDATE MEETING TYPE
+    // ============================================================
+
+    const validMeetingTypes: FrontendMeetingType[] = [
+      "clinic",
+      "video",
+      "voice",
+    ];
+
+    if (!validMeetingTypes.includes(meetingType)) {
+      return NextResponse.json(
         {
-          status: 400,
-        }
+          message: "Invalid consultation type.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // ============================================================
+    // VALIDATE CONNECTION METHOD
+    // ============================================================
+
+    if (meetingType === "voice" && connectionMethod !== "zoom") {
+      return NextResponse.json(
+        {
+          message: "Voice consultations must use Zoom.",
+        },
+        { status: 400 }
       );
     }
 
     if (
-      appointmentDate.getTime() <
-      Date.now()
+      meetingType === "video" &&
+      connectionMethod !== "google_meet"
     ) {
       return NextResponse.json(
         {
-          success: false,
-          message:
-            "Appointment date cannot be in the past.",
+          message: "Video consultations must use Google Meet.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    const doctor =
-      await prisma.doctor.findFirst({
-        where: {
-          id: data.doctorId,
-          isActive: true,
-        },
-      });
-
-    if (!doctor) {
+    if (
+      meetingType === "clinic" &&
+      connectionMethod !== null
+    ) {
       return NextResponse.json(
         {
-          success: false,
           message:
-            "Selected doctor is not available.",
+            "Clinic appointments do not require an online meeting.",
         },
-        {
-          status: 404,
-        }
+        { status: 400 }
       );
     }
 
-    const existing =
-      await prisma.appointment.findFirst({
-        where: {
-          doctorId: data.doctorId,
-          appointmentDate,
-          appointmentTime:
-            data.appointmentTime,
-          status: {
-            in: [
-              "PENDING",
-              "CONFIRMED",
-            ],
-          },
-        },
-      });
+    // ============================================================
+    // VALIDATE DOCTOR
+    // ============================================================
 
-    if (existing) {
+    const doctor = await prisma.doctor.findUnique({
+      where: {
+        id: doctorId,
+      },
+    });
+
+    if (!doctor || !doctor.isActive) {
       return NextResponse.json(
         {
-          success: false,
-          message:
-            "This appointment slot is already booked.",
+          message: "Selected specialist is not available.",
         },
-        {
-          status: 409,
-        }
+        { status: 400 }
       );
     }
 
-    const meetingType =
-      normalizeMeetingType(
-        data.meetingType
-      );
-      
-    const session =
-      await getAdminFromSession();
+    // ============================================================
+    // VALIDATE DATE
+    // ============================================================
 
-    const appointment =
-      await prisma.appointment.create({
+    const startDate = new Date(appointmentDate);
+
+    if (Number.isNaN(startDate.getTime())) {
+      return NextResponse.json(
+        {
+          message: "Invalid appointment date.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // ============================================================
+    // NORMALIZE VALUES
+    // ============================================================
+
+    const prismaMeetingType =
+      meetingType.toUpperCase() as
+        | "CLINIC"
+        | "VIDEO"
+        | "VOICE";
+
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedConcerns = concerns.trim();
+
+    // ============================================================
+    // CREATE EXTERNAL MEETING
+    //
+    // We create the Zoom/Google Meet meeting first because the
+    // external provider needs to return the meeting information
+    // before we can store it in our Meeting table.
+    // ============================================================
+
+    let meetingProvider:
+      | "NONE"
+      | "ZOOM"
+      | "GOOGLE_MEET" = "NONE";
+
+    let externalMeetingId: string | null = null;
+    let meetingUrl: string | null = null;
+    let hostUrl: string | null = null;
+
+    // ============================================================
+    // VOICE + ZOOM
+    // ============================================================
+
+    if (
+      meetingType === "voice" &&
+      connectionMethod === "zoom"
+    ) {
+      const zoomMeeting = await createZoomMeeting({
+        topic: `Voice Consultation - ${trimmedName}`,
+        startTime: startDate.toISOString(),
+        duration: 30,
+        patientName: trimmedName,
+      });
+
+      meetingProvider = "ZOOM";
+
+      externalMeetingId = String(zoomMeeting.id);
+
+      meetingUrl = zoomMeeting.join_url;
+
+      hostUrl = zoomMeeting.start_url;
+    }
+
+    // ============================================================
+    // VIDEO + GOOGLE MEET
+    // ============================================================
+
+    if (
+      meetingType === "video" &&
+      connectionMethod === "google_meet"
+    ) {
+      const endDate = new Date(
+        startDate.getTime() + 30 * 60 * 1000
+      );
+
+      const googleMeeting = await createGoogleMeet({
+        title: `Video Consultation - ${trimmedName}`,
+
+        description: [
+          `Patient: ${trimmedName}`,
+          `Doctor: ${doctor.name}`,
+          `Consultation Type: Video`,
+          `Concerns: ${trimmedConcerns}`,
+        ].join("\n"),
+
+        startTime: startDate.toISOString(),
+
+        endTime: endDate.toISOString(),
+
+        patientEmail: trimmedEmail,
+      });
+
+      meetingProvider = "GOOGLE_MEET";
+
+      externalMeetingId =
+        googleMeeting.eventId || null;
+
+      meetingUrl = googleMeeting.meetingUrl;
+
+      hostUrl = googleMeeting.htmlLink || null;
+    }
+
+    // ============================================================
+    // CREATE APPOINTMENT + MEETING + NOTIFICATIONS
+    // ============================================================
+
+    const result = await prisma.$transaction(async (tx) => {
+      // ----------------------------------------------------------
+      // CREATE APPOINTMENT
+      // ----------------------------------------------------------
+
+      const appointment = await tx.appointment.create({
         data: {
-          name: data.name,
-          email: data.email,
-          concerns: data.concerns,
-          meetingType,
-          appointmentDate,
-          appointmentTime:
-            data.appointmentTime,
-          doctorId: doctor.id,
-          userId:
-            session?.role === "USER"
-              ? session.id
-              : undefined,
+          name: trimmedName,
+
+          email: trimmedEmail,
+
+          concerns: trimmedConcerns,
+
+          meetingType: prismaMeetingType,
+
+          appointmentDate: startDate,
+
+          appointmentTime,
+
           status: "PENDING",
+
+          userId: user.id,
+
+          doctorId,
         },
       });
 
-    // Send notification (wrap in try-catch so it doesn't break the response)
-    try {
-      await sendNotification({
-        doctorId: doctor.id,
-        isAdmin: true,
-        appointmentId:
-          appointment.id,
-        type: "APPOINTMENT_CREATED",
-        title: "New appointment request",
-        message:
-          `${appointment.name} requested a ${meetingType.toLowerCase()} appointment.`,
+      // ----------------------------------------------------------
+      // CREATE MEETING
+      //
+      // Only online consultations get a Meeting record.
+      // Clinic appointments do not need one.
+      // ----------------------------------------------------------
+
+      let meeting = null;
+
+      if (meetingType !== "clinic") {
+        meeting = await tx.meeting.create({
+          data: {
+            appointmentId: appointment.id,
+
+            provider: meetingProvider,
+
+            externalMeetingId,
+
+            meetingUrl,
+
+            hostUrl,
+
+            type: prismaMeetingType,
+
+            status: "CREATED",
+          },
+        });
+      }
+
+      // ----------------------------------------------------------
+      // PATIENT NOTIFICATION
+      // ----------------------------------------------------------
+
+      await tx.notification.create({
+        data: {
+          userId: user.id,
+
+          appointmentId: appointment.id,
+
+          type: "APPOINTMENT_CREATED",
+
+          title: "Appointment Request Submitted",
+
+          message:
+            `Your ${meetingType} consultation with ` +
+            `${doctor.name} has been submitted for ` +
+            `${appointmentTime}.`,
+        },
       });
-    } catch (notificationError) {
-      console.error(
-        "Failed to send notification:",
-        notificationError
-      );
-      // Continue even if notification fails
-    }
+
+      // ----------------------------------------------------------
+      // DOCTOR NOTIFICATION
+      // ----------------------------------------------------------
+
+      await tx.notification.create({
+        data: {
+          doctorId: doctor.id,
+
+          appointmentId: appointment.id,
+
+          type: "APPOINTMENT_CREATED",
+
+          title: "New Appointment Request",
+
+          message:
+            `${trimmedName} has requested a ` +
+            `${meetingType} consultation for ` +
+            `${appointmentTime}.`,
+        },
+      });
+
+      return {
+        appointment,
+        meeting,
+      };
+    });
+
+    // ============================================================
+    // RESPONSE
+    // ============================================================
 
     return NextResponse.json(
       {
         success: true,
-        message:
-          "Appointment request submitted successfully.",
-        appointment,
+
+        message: "Appointment booked successfully.",
+
+        appointment: {
+          id: result.appointment.id,
+
+          name: result.appointment.name,
+
+          email: result.appointment.email,
+
+          meetingType:
+            result.appointment.meetingType,
+
+          appointmentDate:
+            result.appointment.appointmentDate,
+
+          appointmentTime:
+            result.appointment.appointmentTime,
+
+          status: result.appointment.status,
+
+          doctor: {
+            id: doctor.id,
+            name: doctor.name,
+          },
+
+          meeting: result.meeting
+            ? {
+                id: result.meeting.id,
+
+                provider:
+                  result.meeting.provider,
+
+                type: result.meeting.type,
+
+                status:
+                  result.meeting.status,
+
+                meetingUrl:
+                  result.meeting.meetingUrl,
+              }
+            : null,
+        },
       },
-      {
-        status: 201,
-      }
+      { status: 201 }
     );
   } catch (error) {
     console.error(
-      "Appointment creation error:",
+      "Appointment API error:",
       error
     );
 
-    // Always return a proper JSON response
     return NextResponse.json(
       {
         success: false,
+
         message:
           error instanceof Error
             ? error.message
-            : "Something went wrong while booking the appointment.",
+            : "Unable to book appointment.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

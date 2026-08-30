@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useContactBooking } from "./ContactBookingProvider";
+import type { ConnectionMethod } from "./ContactBookingProvider";
 
-type ConnectionMethod = {
+type ConnectionMethodOption = {
   id: string;
   title: string;
   description: string;
@@ -10,7 +11,7 @@ type ConnectionMethod = {
 };
 
 type Props = {
-  methods: ConnectionMethod[];
+  methods: ConnectionMethodOption[];
 };
 
 function MethodIcon({ type }: { type: string }) {
@@ -73,20 +74,59 @@ function MethodIcon({ type }: { type: string }) {
   );
 }
 
-export function ContactConnectionClient({ methods }: Props) {
-  const [selected, setSelected] = useState("zoom");
+export function ContactConnectionClient({
+  methods,
+}: Props) {
+  const {
+    meetingType,
+    connectionMethod,
+    setConnectionMethod,
+  } = useContactBooking();
+
+  // Safety: clinic does not need connection selection.
+  if (meetingType === "clinic") {
+    return null;
+  }
+
+  /*
+   * Only show online methods for online consultations.
+   *
+   * Voice:
+   *   Zoom
+   *
+   * Video:
+   *   Google Meet
+   *
+   * You can add other methods later if required.
+   */
+  const allowedMethods = methods.filter((method) => {
+    if (meetingType === "voice") {
+      return method.id === "zoom";
+    }
+
+    if (meetingType === "video") {
+      return method.id === "google_meet";
+    }
+
+    return false;
+  });
 
   return (
-    <div className="grid grid-cols-2 gap-2 md:grid-cols-5 md:gap-2">
-      {methods.map((method) => {
-        const isSelected = selected === method.id;
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {allowedMethods.map((method) => {
+        const isSelected =
+          connectionMethod === method.id;
 
         return (
           <button
             key={method.id}
             type="button"
-            onClick={() => setSelected(method.id)}
-            className={`min-h-[142px] rounded-xl border px-3 py-4 text-center transition-all duration-200 md:min-h-[146px] ${
+            onClick={() => {
+              setConnectionMethod(
+                method.id as ConnectionMethod
+              );
+            }}
+            className={`min-h-[142px] rounded-xl border px-3 py-4 text-center transition-all duration-200 ${
               isSelected
                 ? "border-[#151568] bg-[#151568] text-white shadow-sm"
                 : "border-gray-300 bg-white text-[#123c31] hover:border-[#151568]"
@@ -108,7 +148,9 @@ export function ContactConnectionClient({ methods }: Props) {
 
             <p
               className={`mt-1 text-[10px] leading-4 md:text-xs ${
-                isSelected ? "text-white/75" : "text-gray-500"
+                isSelected
+                  ? "text-white/75"
+                  : "text-gray-500"
               }`}
             >
               {method.description}

@@ -4,9 +4,19 @@ import { createContext, useContext, useState } from "react";
 
 export type MeetingType = "clinic" | "video" | "voice";
 
+export type ConnectionMethod =
+  | "zoom"
+  | "google_meet"
+  | "phone"
+  | "message"
+  | "whatsapp";
+
 type ContactBookingContextType = {
   meetingType: MeetingType;
   setMeetingType: (type: MeetingType) => void;
+
+  connectionMethod: ConnectionMethod;
+  setConnectionMethod: (method: ConnectionMethod) => void;
 };
 
 const ContactBookingContext =
@@ -20,11 +30,16 @@ export function ContactBookingProvider({
   const [meetingType, setMeetingType] =
     useState<MeetingType>("video");
 
+  const [connectionMethod, setConnectionMethod] =
+    useState<ConnectionMethod>("google_meet");
+
   return (
     <ContactBookingContext.Provider
       value={{
         meetingType,
         setMeetingType,
+        connectionMethod,
+        setConnectionMethod,
       }}
     >
       {children}
