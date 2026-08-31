@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-
+import 'dotenv/config'
 type CreateGoogleMeetParams = {
   title: string;
   description: string;
