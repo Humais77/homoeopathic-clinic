@@ -166,18 +166,22 @@ export async function POST(request: Request) {
     // Create appointment and meeting in transaction
     const result = await prisma.$transaction(async (tx) => {
       const appointment = await tx.appointment.create({
-        data: {
-          name: trimmedName,
-          email: trimmedEmail,
-          concerns: trimmedConcerns,
-          meetingType: prismaMeetingType,
-          appointmentDate: startDate,
-          appointmentTime,
-          status: "PENDING",
-          userId: user.id,
-          doctorId,
-        },
-      });
+  data: {
+    name: trimmedName,
+    email: trimmedEmail,
+    concerns: trimmedConcerns,
+
+    meetingType: prismaMeetingType,
+    connectionProvider: meetingProvider,
+
+    appointmentDate: startDate,
+    appointmentTime,
+    status: "PENDING",
+
+    userId: user.id,
+    doctorId,
+  },
+});
 
       let meeting = null;
 

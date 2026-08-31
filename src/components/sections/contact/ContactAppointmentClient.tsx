@@ -103,10 +103,11 @@ export function ContactAppointmentClient({
   isAuthenticated,
 }: Props) {
   const {
-    meetingType,
-    setMeetingType,
-    connectionMethod,
-  } = useContactBooking();
+  meetingType,
+  setMeetingType,
+  connectionMethod,
+  setConnectionMethod,
+} = useContactBooking();
 
   const [selectedDoctorId, setSelectedDoctorId] = useState(
     doctors[0]?.id || ""
@@ -263,10 +264,17 @@ export function ContactAppointmentClient({
               <button
                 key={type.id}
                 type="button"
-                onClick={() => {
-                  setMeetingType(type.id);
-                  setSubmitted(false);
-                }}
+               onClick={() => {
+  setMeetingType(type.id);
+
+  if (type.id === "clinic") {
+    setConnectionMethod(null);
+  } else if (type.id === "video") {
+    setConnectionMethod("google_meet");
+  }
+
+  setSubmitted(false);
+}}
                 className={`rounded-[20px] border-2 p-5 text-left transition-all md:min-h-[152px] ${
                   selected
                     ? "border-[#151568] bg-[#151568] text-white"
