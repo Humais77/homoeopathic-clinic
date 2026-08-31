@@ -7,6 +7,7 @@ export type MeetingType = "clinic" | "video" | "voice";
 export type ConnectionMethod =
   | "zoom"
   | "google_meet"
+  | "livekit"
   | "phone"
   | "message"
   | "whatsapp";
@@ -19,19 +20,11 @@ type ContactBookingContextType = {
   setConnectionMethod: (method: ConnectionMethod) => void;
 };
 
-const ContactBookingContext =
-  createContext<ContactBookingContextType | null>(null);
+const ContactBookingContext = createContext<ContactBookingContextType | null>(null);
 
-export function ContactBookingProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [meetingType, setMeetingType] =
-    useState<MeetingType>("video");
-
-  const [connectionMethod, setConnectionMethod] =
-    useState<ConnectionMethod>("google_meet");
+export function ContactBookingProvider({ children }: { children: React.ReactNode }) {
+  const [meetingType, setMeetingType] = useState<MeetingType>("video");
+  const [connectionMethod, setConnectionMethod] = useState<ConnectionMethod>("livekit");
 
   return (
     <ContactBookingContext.Provider
@@ -51,9 +44,7 @@ export function useContactBooking() {
   const context = useContext(ContactBookingContext);
 
   if (!context) {
-    throw new Error(
-      "useContactBooking must be used inside ContactBookingProvider"
-    );
+    throw new Error("useContactBooking must be used inside ContactBookingProvider");
   }
 
   return context;

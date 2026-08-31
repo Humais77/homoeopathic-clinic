@@ -1,325 +1,134 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
-
+// app/api/meetings/[appointmentId]/token/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-
-import {
-  createMeetingToken,
-  livekitHost,
-} from "@/src/lib/meeting";
-
-import {
-  getAdminFromSession,
-} from "@/src/lib/auth";
-
-import {
-  ensureAppointmentMeeting,
-} from "@/src/lib/appointment-meeting";
+import { createMeetingToken, livekitHost } from "@/src/lib/meeting";
+import { getAdminFromSession } from "@/src/lib/auth";
 
 type Context = {
   params: Promise<{
     appointmentId: string;
   }>;
 };
-function getAppointmentStart(
-  appointmentDate: Date,
-  appointmentTime: string
-) {
-  const date = new Date(appointmentDate);
 
-  const match = appointmentTime.match(
-    /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i
-  );
-
-  if (!match) {
-    throw new Error(
-      `Invalid appointment time: ${appointmentTime}`
-    );
-  }
-
-  let hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  const period = match[3].toUpperCase();
-
-  if (period === "PM" && hours !== 12) {
-    hours += 12;
-  }
-
-  if (period === "AM" && hours === 12) {
-    hours = 0;
-  }
-
-  date.setHours(
-    hours,
-    minutes,
-    0,
-    0
-  );
-
-  return date;
-}
-export async function POST(
-  request: NextRequest,
-  context: Context
-) {
+export async function POST(request: NextRequest, context: Context) {
   try {
-    const { appointmentId } =
-      await context.params;
-
-    const session =
-      await getAdminFromSession();
+    const { appointmentId } = await context.params;
+    const session = await getAdminFromSession();
 
     if (!session) {
-      return NextResponse.json(
-        {
-          message: "Unauthorized.",
-        },
-        {
-          status: 401,
-        }
-      );
+      return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
     }
 
-    const appointment =
-      await prisma.appointment.findUnique({
-        where: {
-          id: appointmentId,
-        },
-
-        include: {
-          doctor: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      });
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        doctor: { include: { user: true } },
+        meeting: true,
+      },
+    });
 
     if (!appointment) {
+      return NextResponse.json({ message: "Appointment not found." }, { status: 404 });
+    }
+
+    if (appointment.status !== "CONFIRMED") {
       return NextResponse.json(
-        {
-          message: "Appointment not found.",
-        },
-        {
-          status: 404,
-        }
+        { message: "This appointment is not confirmed." },
+        { status: 403 }
       );
     }
 
-    if (
-      appointment.status !== "CONFIRMED"
-    ) {
+    if (appointment.meetingType === "CLINIC") {
       return NextResponse.json(
-        {
-          message:
-            "This appointment is not confirmed.",
-        },
-        {
-          status: 403,
-        }
+        { message: "This appointment is a clinic visit and does not have an online meeting." },
+        { status: 400 }
       );
     }
 
-    // Clinic appointments don't use LiveKit
-    if (
-      appointment.meetingType === "CLINIC"
-    ) {
-      return NextResponse.json(
-        {
-          message:
-            "This appointment is a clinic visit and does not have an online meeting.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    /*
-     * ----------------------------------------------------
-     * AUTHORIZATION
-     * ----------------------------------------------------
-     */
-
+    // Authorization
     let allowed = false;
-
-    // ADMIN can join any meeting
     if (session.role === "ADMIN") {
       allowed = true;
     }
-
-    // DOCTOR can only join their own appointments
     if (session.role === "DOCTOR") {
-      allowed =
-        appointment.doctor.userId ===
-        session.id;
+      allowed = appointment.doctor.userId === session.id;
     }
-
-    // USER can only join their appointment
     if (session.role === "USER") {
-      allowed =
-        appointment.userId ===
-        session.id;
+      allowed = appointment.userId === session.id;
     }
-
-    /*
-     * Legacy appointment support
-     */
-    if (
-      session.role === "USER" &&
-      !appointment.userId &&
-      session.email !== appointment.email
-    ) {
+    if (session.role === "USER" && !appointment.userId && session.email !== appointment.email) {
       allowed = false;
     }
 
     if (!allowed) {
       return NextResponse.json(
-        {
-          message:
-            "You are not allowed to join this meeting.",
-        },
-        {
-          status: 403,
-        }
+        { message: "You are not allowed to join this meeting." },
+        { status: 403 }
       );
     }
 
-    /*
-     * ----------------------------------------------------
-     * ENSURE MEETING EXISTS
-     * ----------------------------------------------------
-     *
-     * This fixes the problem where an appointment was
-     * manually changed to CONFIRMED in the database.
-     *
-     * It creates:
-     *
-     * 1. LiveKit room
-     * 2. Prisma Meeting record
-     */
-
-    const meeting =
-      await ensureAppointmentMeeting(
-        appointment.id
-      );
-
-    if (!meeting) {
+    // Check meeting type
+    if (!appointment.meeting) {
       return NextResponse.json(
-        {
-          message:
-            "Unable to create online meeting.",
-        },
-        {
-          status: 500,
-        }
+        { message: "No meeting found for this appointment." },
+        { status: 404 }
       );
     }
 
-    /*
-     * ----------------------------------------------------
-     * JOIN WINDOW
-     * ----------------------------------------------------
-     */
-
-   const appointmentStart =
-  getAppointmentStart(
-    appointment.appointmentDate,
-    appointment.appointmentTime
-  ).getTime();
-
-    const now = Date.now();
-
-    const earliestJoin =
-      appointmentStart -
-      10 * 60 * 1000;
-
-    const latestJoin =
-      appointmentStart +
-      2 * 60 * 60 * 1000;
-
-    if (now < earliestJoin) {
-      return NextResponse.json(
-        {
-          message:
-            "The meeting is not available yet.",
-          availableAt:
-            new Date(
-              earliestJoin
-            ).toISOString(),
-        },
-        {
-          status: 403,
-        }
-      );
-    }
-
-    if (now > latestJoin) {
-      return NextResponse.json(
-        {
-          message:
-            "The meeting has ended.",
-        },
-        {
-          status: 403,
-        }
-      );
-    }
-
-    /*
-     * ----------------------------------------------------
-     * CREATE LIVEKIT TOKEN
-     * ----------------------------------------------------
-     */
-
-    const identity =
-      `${session.role.toLowerCase()}-${session.id}`;
-
-    const token =
-      await createMeetingToken({
-        roomName: meeting.roomName,
-
-        identity,
-
-        name:
-          session.role === "USER"
-            ? appointment.name
-            : session.name,
-
-        canPublish: true,
+    // For Zoom meetings, redirect to Zoom URL
+    if (appointment.meeting.provider === "ZOOM") {
+      return NextResponse.json({
+        success: true,
+        meetingType: appointment.meetingType,
+        provider: "ZOOM",
+        meetingUrl: appointment.meeting.meetingUrl,
+        externalMeetingId: appointment.meeting.externalMeetingId,
       });
+    }
+
+    // For Google Meet, redirect to Google Meet URL
+    if (appointment.meeting.provider === "GOOGLE_MEET") {
+      return NextResponse.json({
+        success: true,
+        meetingType: appointment.meetingType,
+        provider: "GOOGLE_MEET",
+        meetingUrl: appointment.meeting.meetingUrl,
+        externalMeetingId: appointment.meeting.externalMeetingId,
+      });
+    }
+
+    // For LiveKit, create token
+    const roomName = appointment.meeting.roomName;
+    if (!roomName) {
+      return NextResponse.json(
+        { message: "Meeting room not found." },
+        { status: 500 }
+      );
+    }
+
+    const identity = `${session.role.toLowerCase()}-${session.id}`;
+    const token = await createMeetingToken({
+      roomName,
+      identity,
+      name: session.role === "USER" ? appointment.name : session.name,
+      canPublish: true,
+    });
 
     return NextResponse.json({
       success: true,
-
       serverUrl: livekitHost,
-
       token,
-
-      roomName:
-        meeting.roomName,
-
-      meetingType:
-        appointment.meetingType,
+      roomName,
+      meetingType: appointment.meetingType,
+      provider: "LIVEKIT",
     });
   } catch (error) {
-    console.error(
-      "Meeting token error:",
-      error
-    );
-
+    console.error("Meeting token error:", error);
     return NextResponse.json(
       {
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to join meeting.",
+        message: error instanceof Error ? error.message : "Unable to join meeting.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

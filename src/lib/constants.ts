@@ -346,43 +346,35 @@ export const PHARMACIES_SECTION = {
 };
 export const CONTACT_CONNECTION = {
   title: "How would you like to connect?",
-  subtitle:
-    "Choose your preferred consultation method. All platforms are fully encrypted and secure.",
+  subtitle: "Choose your preferred consultation method. All platforms are fully encrypted and secure.",
 
   methods: [
     {
-      id: "video",
-      title: "Video Call",
-      description: "Face-to-face clinical assessment.",
+      id: "livekit",
+      title: "LiveKit Video",
+      description: "Direct browser-based video call.",
       type: "video",
-    },
-    {
-      id: "voice",
-      title: "Voice Call",
-      description: "Clear audio-only session.",
-      type: "phone",
-    },
-    {
-      id: "whatsapp",
-      title: "WhatsApp",
-      description: "Encrypted chat & media.",
-      type: "message",
     },
     {
       id: "zoom",
       title: "Zoom",
       description: "Professional conferencing.",
-      type: "users",
+      type: "zoom",
     },
     {
-      id: "google-meet",
+      id: "google_meet",
       title: "Google Meet",
       description: "Direct browser access.",
       type: "video",
     },
+    {
+      id: "phone",
+      title: "Voice Call",
+      description: "Clear audio-only session.",
+      type: "phone",
+    },
   ],
 };
-
 export const CONTACT_APPOINTMENT = {
   title: "How would you like to meet?",
 
@@ -423,7 +415,8 @@ export const CONTACT_APPOINTMENT = {
     "02:30 PM",
     "7:50 PM",
     "8:35 PM",
-    "12:56 PM"
+    "9:14 PM" ,
+    "9:25 PM"
   ],
 
   form: {
