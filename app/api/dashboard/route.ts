@@ -17,9 +17,11 @@ export async function GET() {
       prisma.consultationInquiry.count(),
       prisma.doctor.count(),
       prisma.treatment.count(),
-      // Add blogs count if you have a Blog model
-      // prisma.blog.count() ?? 0,
-      Promise.resolve(0), // Temporary: return 0 for blogs
+      prisma.blog.count({
+  where: {
+    status: "PUBLISHED",
+  },
+}),
     ]);
 
     return NextResponse.json({

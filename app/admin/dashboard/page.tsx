@@ -157,7 +157,7 @@ export default function AdminDashboardPage() {
 
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
 
           <Link
             href="/admin/appointments"
@@ -210,6 +210,18 @@ export default function AdminDashboardPage() {
               Manage services
             </div>
           </Link>
+          <Link
+  href="/admin/blogs"
+  className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow text-center"
+>
+  <div className="text-lg font-semibold text-gray-900">
+    Blogs
+  </div>
+
+  <div className="text-sm text-gray-500 mt-1">
+    Create and manage blogs
+  </div>
+</Link>
 
         </div>
 
