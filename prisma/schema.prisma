@@ -24,6 +24,7 @@ model User {
   doctor        Doctor?
   notifications Notification[]
   blogs         Blog[]
+  mediaAssets   MediaAsset[]
 
   @@map("users")
 }
@@ -45,11 +46,30 @@ model Treatment {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
+  image       String?
+  imagePublicId String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("treatments")
+}
+
+model Pharmacy {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  image       String?
+  imagePublicId String?
+  address     String?
+  phone       String?
+  website     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("pharmacies")
 }
 
 model Doctor {
@@ -60,14 +80,17 @@ model Doctor {
   experience     String?
   description    String?
   image          String?
+  imagePublicId  String?
   isActive       Boolean        @default(true)
   userId         String?        @unique
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
   appointments   Appointment[]
   user           User?          @relation(fields: [userId], references: [id])
   notifications  Notification[]
 
+  @@index([isActive])
   @@map("doctors")
 }
 
@@ -89,6 +112,7 @@ model Appointment {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   connectionProvider MeetingProvider   @default(NONE)
+
   doctor             Doctor            @relation(fields: [doctorId], references: [id])
   user               User?             @relation(fields: [userId], references: [id])
   meeting            Meeting?
@@ -117,7 +141,12 @@ model Meeting {
   meetingUrl        String?
   provider          MeetingProvider @default(NONE)
   roomName          String?
-  appointment       Appointment     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  appointment       Appointment     @relation(
+    fields: [appointmentId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   @@index([provider])
   @@index([status])
@@ -136,9 +165,24 @@ model Notification {
   message       String
   isRead        Boolean          @default(false)
   createdAt     DateTime         @default(now())
-  appointment   Appointment?     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  doctor        Doctor?          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  user          User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  appointment   Appointment?     @relation(
+    fields: [appointmentId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  doctor        Doctor?          @relation(
+    fields: [doctorId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  user          User?            @relation(
+    fields: [userId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   @@index([userId, isRead])
   @@index([doctorId, isRead])
@@ -155,6 +199,7 @@ model Blog {
   content  String
   category String?
   image    String?
+  imagePublicId String?
 
   status BlogStatus @default(DRAFT)
 
@@ -170,6 +215,34 @@ model Blog {
   @@index([authorId])
   @@index([publishedAt])
   @@map("blogs")
+}
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  url         String
+  publicId    String   @unique
+  resourceType String  @default("image")
+  folder      String?
+  originalName String?
+  format      String?
+  width       Int?
+  height      Int?
+  size        Int?
+
+  uploadedById String?
+  uploadedBy   User? @relation(
+    fields: [uploadedById],
+    references: [id],
+    onDelete: SetNull
+  )
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([uploadedById])
+  @@index([folder])
+  @@index([createdAt])
+  @@map("media_assets")
 }
 
 enum UserRole {

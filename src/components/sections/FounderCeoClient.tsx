@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ABOUT_HOME } from '@/src/lib/constants';
-
+import { SITE_ASSETS } from "@/src/config/site-assets";
 export function FounderCeoClient() {
   return (
     <section className="bg-white py-12 sm:py-16 lg:py-20">
@@ -16,7 +16,7 @@ export function FounderCeoClient() {
           <div className="relative mx-auto w-full max-w-[560px] lg:mx-0">
             <div className="relative overflow-hidden rounded-[20px] sm:rounded-[24px]">
               <Image
-                src="/images/Founder&Ceo.png"
+                src={SITE_ASSETS.founder}
                 alt="Founder and CEO - Heal By Nature"
                 width={600}
                 height={650}

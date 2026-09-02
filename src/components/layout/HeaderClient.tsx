@@ -12,6 +12,7 @@ import {
 } from "@/src/lib/constants";
 import { Dropdown } from "./Dropdown";
 import { useAuth } from "@/src/context/AuthContext";
+import { SITE_ASSETS } from "@/src/config/site-assets";
 
 export function HeaderClient() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] =
@@ -194,7 +195,7 @@ export function HeaderClient() {
               onClick={closeMenu}
             >
               <Image
-                src="/images/Logo.png"
+                src={SITE_ASSETS.logo}
                 alt="Heal By Nature"
                 width={70}
                 height={70}
@@ -458,7 +459,7 @@ export function HeaderClient() {
                 onClick={closeMenu}
               >
                 <Image
-                  src="/images/Logo.png"
+                  src={SITE_ASSETS.logo}
                   alt="Heal By Nature"
                   width={40}
                   height={40}

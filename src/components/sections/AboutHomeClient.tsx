@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ABOUT_HOME } from '@/src/lib/constants';
-
+import { SITE_ASSETS } from "@/src/config/site-assets";
 export function AboutHomeClient() {
   return (
     <section className="bg-white py-12 sm:py-16 lg:py-20">
@@ -12,7 +12,7 @@ export function AboutHomeClient() {
           <div className="relative order-2 mx-auto w-full max-w-[560px] lg:order-1 lg:mx-0">
             <div className="relative overflow-hidden rounded-[20px] sm:rounded-[24px]">
               <Image
-                src="/images/Hero-bg.png"
+                src={SITE_ASSETS.hero}
                 alt="Heal By Nature - About Us"
                 width={600}
                 height={650}

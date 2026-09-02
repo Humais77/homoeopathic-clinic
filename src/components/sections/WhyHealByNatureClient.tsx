@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Brain, Droplets } from "lucide-react"; // Remove ShieldCheck import
+import { ArrowRight, Brain, Droplets } from "lucide-react"; 
 import { WHY_HEAL_BY_NATURE } from "@/src/lib/constants";
-
+import { SITE_ASSETS } from "@/src/config/site-assets";
 export function WhyHealByNatureClient() {
   const holistic = WHY_HEAL_BY_NATURE.features.find(
     (feature) => feature.type === "holistic"
@@ -40,7 +40,7 @@ export function WhyHealByNatureClient() {
           {doctors && (
             <div className="relative min-h-[430px] overflow-hidden rounded-[18px] shadow-[0_5px_20px_rgba(0,0,0,0.08)] md:min-h-[500px] lg:col-span-6 lg:row-span-2">
               <Image
-                src="/images/Home/WhyHealByNature-Img.png"
+                src={SITE_ASSETS.whyHealByNature}
                 alt="Expert Doctors"
                 fill
                 priority
@@ -136,12 +136,12 @@ export function WhyHealByNatureClient() {
               {/* Shield Icon - Fixed with proper attributes */}
               <div className="absolute bottom-2 right-5 flex items-center justify-center md:right-7">
                 <Image
-                  src="/images/Home/ShieldIcon.png"
+                  src={SITE_ASSETS.whyHealByNature_shield}
                   alt="Shield Icon"
                   width={50}
                   height={50}
                   priority
-                  className="h-auto w-auto" // Prevent layout shift
+                  className="h-auto w-auto" 
                 />
               </div>
             </div>

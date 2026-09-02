@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { SITE_ASSETS } from "@/src/config/site-assets";
 
 export function HeroClient() {
   return (
@@ -54,7 +55,7 @@ export function HeroClient() {
           <div className="relative flex items-end justify-center lg:justify-end">
             <div className="relative w-full max-w-md sm:max-w-lg lg:max-w-xl">
               <Image
-                src="/images/Hero-bg.png"
+                src={SITE_ASSETS.hero}
                 alt="Healthcare Professionals"
                 width={700}
                 height={600}

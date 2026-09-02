@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { FOOTER, NAV_LINKS } from "@/src/lib/constants";
-
+import { SITE_ASSETS } from "@/src/config/site-assets";
 export function FooterClient() {
   return (
     <footer className="relative overflow-hidden bg-[#050d32] text-white">
@@ -17,7 +17,7 @@ export function FooterClient() {
             className="relative z-20 flex items-center justify-center"
           >
             <Image
-              src="/images/Home/FooterLogo-Img.png"
+              src={SITE_ASSETS.footerLogo}
               alt="Heal By Nature"
               width={70}
               height={70}
