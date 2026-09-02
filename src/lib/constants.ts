@@ -1,3 +1,4 @@
+import type { MeetingType } from "@/src/components/sections/appointment/AppointmentBookingProvider";
 export const WHY_HEAL_BY_NATURE = {
   title: "Why Heal By Nature?",
   subtitle:
@@ -372,7 +373,21 @@ export const ONLINE_CONSULTATION = {
   ],
 };
 
-export const APPOINTMENT_BOOKING = {
+export const APPOINTMENT_BOOKING: {
+  title: string;
+  meetingTypes: {
+    id: MeetingType;
+    title: string;
+    description: string;
+    type: string;
+  }[];
+  slots: string[];
+  form: {
+    namePlaceholder: string;
+    emailPlaceholder: string;
+    concernsPlaceholder: string;
+  };
+} = {
   title: "How would you like to meet?",
 
   meetingTypes: [

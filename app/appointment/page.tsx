@@ -22,14 +22,14 @@ export default async function AppointmentPage({
   const initialMeetingType =
     params.type === "online"
       ? "video"
-      : "video";
+      : "clinic";
 
   return (
     <main>
       <PageHero
         title="Book an Appointment"
         subtitle="Personalized Care"
-        description="Choose your preferred consultation method, specialist, date, and time."
+        description="Choose your preferred consultation type, specialist, date, and time."
         backgroundImage="/images/ContactUsHero.png"
       />
 

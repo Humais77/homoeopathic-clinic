@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-} from "react";
+import { createContext, useContext, useState } from "react";
 
 export type MeetingType = "clinic" | "video";
 
@@ -28,7 +24,7 @@ const AppointmentBookingContext =
 
 export function AppointmentBookingProvider({
   children,
-  initialMeetingType = "video",
+  initialMeetingType = "clinic",
 }: {
   children: React.ReactNode;
   initialMeetingType?: MeetingType;
