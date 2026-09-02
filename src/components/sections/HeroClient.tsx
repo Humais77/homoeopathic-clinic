@@ -43,7 +43,7 @@ export function HeroClient() {
               </Link>
 
               <Link
-                href="/contact"
+                href="/emergency"
                 className="inline-flex items-center justify-center rounded-xl bg-blue-950 px-7 py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-blue-900 hover:shadow-lg"
               >
                 Emergency Contact Us

@@ -344,86 +344,69 @@ export const PHARMACIES_SECTION = {
     },
   ],
 };
-export const CONTACT_CONNECTION = {
-  title: "How would you like to connect?",
-  subtitle: "Choose your preferred consultation method. All platforms are fully encrypted and secure.",
+export const ONLINE_CONSULTATION = {
+  title: "Online Consultation",
+  subtitle: "Professional care from the comfort of your home",
+  description:
+    "Connect with our homeopathic specialists online through a secure and convenient consultation. Choose your preferred platform and speak with your doctor from wherever you are.",
 
   methods: [
     {
       id: "livekit",
       title: "LiveKit Video",
-      description: "Direct browser-based video call.",
+      description: "Direct browser-based video consultation.",
       type: "video",
     },
     {
       id: "zoom",
       title: "Zoom",
-      description: "Professional conferencing.",
-      type: "zoom",
+      description: "Professional video conferencing.",
+      type: "video",
     },
     {
       id: "google_meet",
       title: "Google Meet",
-      description: "Direct browser access.",
+      description: "Simple and convenient video consultation.",
       type: "video",
-    },
-    {
-      id: "phone",
-      title: "Voice Call",
-      description: "Clear audio-only session.",
-      type: "phone",
     },
   ],
 };
-export const CONTACT_APPOINTMENT = {
+
+export const APPOINTMENT_BOOKING = {
   title: "How would you like to meet?",
 
- meetingTypes: [
-  {
-    id: "video",
-    title: "Video Consultation",
-    description:
-      "Speak with our specialist through a private video call.",
-    type: "video",
-  },
-  {
-    id: "voice",
-    title: "Voice Consultation",
-    description:
-      "Speak directly with our specialist through a private voice call.",
-    type: "voice",
-  },
-  {
-    id: "clinic",
-    title: "Clinic Visit",
-    description:
-      "Visit our clinic for an in-person consultation.",
-    type: "clinic",
-  },
-],
-
-  specialist: {
-    name: "Dr. Elena Vane",
-    qualification: "Botanical Medicine Specialist",
-    experience: "15 years experience in Phytotherapy",
-    image: "/images/doctors/doctor-1.png",
-  },
+  meetingTypes: [
+    {
+      id: "video",
+      title: "Video Consultation",
+      description:
+        "Speak with our specialist through a private online video consultation.",
+      type: "video",
+    },
+    {
+      id: "clinic",
+      title: "Clinic Visit",
+      description:
+        "Visit our clinic for a personalized in-person consultation.",
+      type: "clinic",
+    },
+  ],
 
   slots: [
     "09:00 AM",
     "11:45 AM",
     "02:30 PM",
-    "7:50 PM",
-    "8:35 PM",
-    "9:14 PM" ,
-    "10:47 PM"
+    "07:50 PM",
+    "08:35 PM",
+    "09:14 PM",
+    "10:47 PM",
   ],
 
   form: {
     namePlaceholder: "John Doe",
     emailPlaceholder: "john@example.com",
     concernsPlaceholder:
-      "I have been experiencing persistent fatigue and would like to explore herbal remedies...",
+      "Briefly describe your health concerns so our specialist can better understand your needs...",
   },
 };
 
@@ -441,6 +424,25 @@ export const CONTACT_INFO = {
   email: {
     label: "Email",
     details: "hello@healbynature.com",
+  },
+};
+
+export const EMERGENCY_CONTACT = {
+  title: "Emergency Contact",
+  subtitle: "We're here when you need us",
+  description:
+    "If you need urgent assistance, please contact our clinic directly by phone or WhatsApp.",
+
+  phone: {
+    label: "Call Us",
+    number: "+971500000000",
+    display: "+971 50 000 0000",
+  },
+
+  whatsapp: {
+    label: "WhatsApp",
+    number: "971500000000",
+    display: "+971 50 000 0000",
   },
 };
 export const BLOGS_SECTION = {
