@@ -1,23 +1,70 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
-import { hashPassword } from "@/src/lib/password";
-import { createSession } from "@/src/lib/auth";
-import { sendVerificationEmail } from "@/src/lib/email";
-import { generateVerificationToken } from "@/src/lib/email-verification";
+import {
+  hashPassword,
+} from "@/src/lib/password";
 
-import { userRegisterSchema } from "@/src/validators/user-auth.schema";
+import {
+  sendVerificationEmail,
+} from "@/src/lib/email";
 
-export async function POST(request: NextRequest) {
+import {
+  generateVerificationToken,
+} from "@/src/lib/email-verification";
+
+import {
+  userRegisterSchema,
+} from "@/src/validators/auth.schema";
+
+import {
+  registerRateLimit,
+} from "@/src/lib/rate-limit";
+
+import {
+  getClientIp,
+  getUserAgent,
+} from "@/src/lib/security";
+
+export async function POST(
+  request: NextRequest
+) {
+  const ip = getClientIp(request);
+
+  const rateLimit =
+    await registerRateLimit.limit(ip);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      {
+        error:
+          "Too many registration attempts. Please try again later.",
+      },
+      {
+        status: 429,
+      }
+    );
+  }
+
   try {
-    const body = await request.json();
+    const body =
+      await request.json();
 
-    const validation = userRegisterSchema.safeParse(body);
+    const validation =
+      userRegisterSchema.safeParse(
+        body
+      );
 
     if (!validation.success) {
       return NextResponse.json(
         {
-          error: "Invalid input",
+          error:
+            "Invalid registration details.",
+          details:
+            validation.error.flatten(),
         },
         {
           status: 400,
@@ -32,18 +79,21 @@ export async function POST(request: NextRequest) {
       phone,
     } = validation.data;
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail =
+      email.toLowerCase().trim();
 
-    const existingUser = await prisma.user.findUnique({
-      where: {
-        email: normalizedEmail,
-      },
-    });
+    const existingUser =
+      await prisma.user.findUnique({
+        where: {
+          email: normalizedEmail,
+        },
+      });
 
     if (existingUser) {
       return NextResponse.json(
         {
-          error: "An account with this email already exists.",
+          error:
+            "An account with this email already exists.",
         },
         {
           status: 409,
@@ -51,36 +101,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const passwordHash = await hashPassword(password);
+    const passwordHash =
+      await hashPassword(password);
 
     const {
       token,
       tokenHash,
-    } = generateVerificationToken();
+    } =
+      generateVerificationToken();
 
-    const expiresAt = new Date(
-      Date.now() + 30 * 60 * 1000
-    );
+    const expiresAt =
+      new Date(
+        Date.now() +
+          30 * 60 * 1000
+      );
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email: normalizedEmail,
-        passwordHash,
-        phone,
-        role: "USER",
+    const user =
+      await prisma.user.create({
+        data: {
+          name,
+          email: normalizedEmail,
+          passwordHash,
+          phone: phone || null,
 
-        emailVerified: false,
+          role: "USER",
 
-        verifyToken: tokenHash,
+          status: "ACTIVE",
 
-        verifyTokenExpiresAt: expiresAt,
-      },
-    });
+          emailVerified: false,
 
-    /*
-     * Send verification email.
-     */
+          verifyToken: tokenHash,
+
+          verifyTokenExpiresAt:
+            expiresAt,
+        },
+      });
+
     try {
       await sendVerificationEmail({
         email: user.email,
@@ -93,12 +149,6 @@ export async function POST(request: NextRequest) {
         emailError
       );
 
-      /*
-       * Remove account if email could not be sent.
-       *
-       * This prevents users from having an account
-       * that they can never verify.
-       */
       await prisma.user.delete({
         where: {
           id: user.id,
@@ -116,13 +166,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    /*
-     * IMPORTANT:
-     *
-     * Do NOT create login session yet.
-     *
-     * User must verify email first.
-     */
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "REGISTRATION",
+        entity: "User",
+        entityId: user.id,
+        ipAddress: ip,
+        userAgent:
+          getUserAgent(request),
+      },
+    });
 
     return NextResponse.json({
       success: true,
@@ -142,7 +196,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        error: "Internal server error",
+        error:
+          "Internal server error",
       },
       {
         status: 500,

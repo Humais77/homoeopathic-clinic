@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/src/context/AuthContext";
-
+import {
+  getSafeRedirect,
+} from "@/src/lib/security";
+import {
+  getClientIp,
+} from "@/src/lib/security";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,8 +24,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  
   const verified = searchParams.get("verified");
+      const reset =
+      searchParams.get("reset");
 
   /*
    * Redirect already authenticated users
@@ -88,23 +95,26 @@ export default function LoginPage() {
        * Redirect according to role.
        */
       const redirect =
-        searchParams.get("redirect");
+  getSafeClientRedirect(
+    searchParams.get("redirect")
+  );
+  
 
       if (loggedInUser.role === "ADMIN") {
-        router.replace(
-          redirect || "/admin/dashboard"
-        );
-      } else if (
-        loggedInUser.role === "DOCTOR"
-      ) {
-        router.replace(
-          redirect || "/doctor/dashboard"
-        );
-      } else {
-        router.replace(
-          redirect || "/user/dashboard"
-        );
-      }
+  router.replace(
+    redirect || "/admin/dashboard"
+  );
+} else if (
+  loggedInUser.role === "DOCTOR"
+) {
+  router.replace(
+    redirect || "/doctor/dashboard"
+  );
+} else {
+  router.replace(
+    redirect || "/user/dashboard"
+  );
+}
 
       router.refresh();
     } catch (err) {
@@ -117,7 +127,25 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+  function getSafeClientRedirect(
+  value: string | null
+) {
+  if (!value) return null;
 
+  if (!value.startsWith("/")) {
+    return null;
+  }
+
+  if (value.startsWith("//")) {
+    return null;
+  }
+
+  if (value.includes("://")) {
+    return null;
+  }
+
+  return value;
+}
   /*
    * Loading state
    */
@@ -152,12 +180,12 @@ export default function LoginPage() {
         </div>
 
         {/* Verification message */}
-        {verified === "true" && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-            Your email has been verified successfully.
-            You can now sign in.
-          </div>
-        )}
+        {reset === "true" && (
+  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+    Your password has been reset successfully.
+    You can now sign in.
+  </div>
+)}
 
         {/* Login Form */}
         <form
@@ -230,6 +258,14 @@ export default function LoginPage() {
               ? "Signing in..."
               : "Sign In"}
           </button>
+              <div className="text-right">
+  <Link
+    href="/forgot-password"
+    className="text-sm text-green-600 hover:text-green-700"
+  >
+    Forgot password?
+  </Link>
+</div>
 
           {/* Register */}
           <div className="text-center">

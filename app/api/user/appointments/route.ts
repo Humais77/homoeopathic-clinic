@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
 
-import { getAdminFromSession } from "@/src/lib/auth";
+import { getCurrentUser } from "@/src/lib/auth";
 
 export async function GET() {
   try {
-    const session = await getAdminFromSession();
+    const session = await getCurrentUser();
 
     if (!session || session.role !== "USER") {
       return NextResponse.json(

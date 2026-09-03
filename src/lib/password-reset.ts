@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-export function generateVerificationToken() {
+export function generatePasswordResetToken() {
   const token = crypto.randomBytes(32).toString("hex");
 
   const tokenHash = crypto
@@ -14,7 +14,7 @@ export function generateVerificationToken() {
   };
 }
 
-export function hashVerificationToken(
+export function hashPasswordResetToken(
   token: string
 ) {
   return crypto

@@ -1,18 +1,26 @@
-// src/lib/auth.ts
+import {
+  SignJWT,
+  jwtVerify,
+} from "jose";
 
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+
 import { prisma } from "./prisma";
 
 const AUTH_COOKIE = "session";
 
 const SESSION_DURATION =
-  60 * 60 * 24 * 7; // 7 days
+  60 * 60 * 24 * 7;
 
 export type UserRole =
   | "USER"
   | "ADMIN"
   | "DOCTOR";
+
+export type UserStatus =
+  | "ACTIVE"
+  | "SUSPENDED"
+  | "DISABLED";
 
 export type AuthUser = {
   id: string;
@@ -20,6 +28,8 @@ export type AuthUser = {
   name: string;
   phone: string | null;
   role: UserRole;
+  status: UserStatus;
+  emailVerified: boolean;
 };
 
 function getSecretKey(): Uint8Array {
@@ -31,20 +41,26 @@ function getSecretKey(): Uint8Array {
     );
   }
 
+  if (secret.length < 32) {
+    throw new Error(
+      "AUTH_SECRET must be at least 32 characters"
+    );
+  }
+
   return new TextEncoder().encode(secret);
 }
 
-/**
- * Create login session
- */
 export async function createSession(
-  userId: string
+  userId: string,
+  sessionVersion: number
 ) {
   const token = await new SignJWT({
     userId,
+    sessionVersion,
   })
     .setProtectedHeader({
       alg: "HS256",
+      typ: "JWT",
     })
     .setIssuedAt()
     .setExpirationTime(
@@ -59,21 +75,23 @@ export async function createSession(
     token,
     {
       httpOnly: true,
+
       secure:
         process.env.NODE_ENV ===
         "production",
+
       sameSite: "lax",
+
       path: "/",
+
       maxAge: SESSION_DURATION,
     }
   );
 }
 
-/**
- * Get current session
- */
 export async function getSession(): Promise<{
   userId: string;
+  sessionVersion: number;
 } | null> {
   const cookieStore = await cookies();
 
@@ -92,35 +110,47 @@ export async function getSession(): Promise<{
       );
 
     if (
-      !payload.userId ||
       typeof payload.userId !==
-        "string"
+      "string"
+    ) {
+      return null;
+    }
+
+    if (
+      typeof payload.sessionVersion !==
+      "number"
     ) {
       return null;
     }
 
     return {
       userId: payload.userId,
+      sessionVersion:
+        payload.sessionVersion,
     };
   } catch {
     return null;
   }
 }
 
-/**
- * Logout
- */
 export async function clearSession() {
   const cookieStore = await cookies();
 
-  cookieStore.delete(
-    AUTH_COOKIE
+  cookieStore.set(
+    AUTH_COOKIE,
+    "",
+    {
+      httpOnly: true,
+      secure:
+        process.env.NODE_ENV ===
+        "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    }
   );
 }
 
-/**
- * Get logged-in user
- */
 export async function getCurrentUser(): Promise<
   AuthUser | null
 > {
@@ -136,12 +166,16 @@ export async function getCurrentUser(): Promise<
       where: {
         id: session.userId,
       },
+
       select: {
         id: true,
         email: true,
         name: true,
         phone: true,
         role: true,
+        status: true,
+        emailVerified: true,
+        sessionVersion: true,
       },
     });
 
@@ -149,80 +183,91 @@ export async function getCurrentUser(): Promise<
     return null;
   }
 
-  return user as AuthUser;
+  if (
+    user.sessionVersion !==
+    session.sessionVersion
+  ) {
+    return null;
+  }
+
+  if (user.status !== "ACTIVE") {
+    return null;
+  }
+
+  if (!user.emailVerified) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    phone: user.phone,
+    role: user.role,
+    status: user.status,
+    emailVerified:
+      user.emailVerified,
+  };
 }
 
-/**
- * Backwards-compatible session helper.
- *
- * Existing API routes use this name.
- */
-export async function getAdminFromSession(): Promise<
-  AuthUser | null
-> {
-  return getCurrentUser();
-}
-
-/**
- * Require any authenticated user
- */
 export async function requireAuth(): Promise<AuthUser> {
   const user =
     await getCurrentUser();
 
   if (!user) {
-    throw new Error(
-      "Unauthorized"
-    );
+    throw new Error("Unauthorized");
   }
 
   return user;
 }
 
-/**
- * Require ADMIN
- */
 export async function requireAdmin(): Promise<AuthUser> {
   const user =
     await requireAuth();
 
   if (user.role !== "ADMIN") {
-    throw new Error(
-      "Forbidden"
-    );
+    throw new Error("Forbidden");
   }
 
   return user;
 }
 
-/**
- * Require USER
- */
-export async function requireUser(): Promise<AuthUser> {
-  const user =
-    await requireAuth();
-
-  if (user.role !== "USER") {
-    throw new Error(
-      "Forbidden"
-    );
-  }
-
-  return user;
-}
-
-/**
- * Require DOCTOR
- */
 export async function requireDoctor(): Promise<AuthUser> {
   const user =
     await requireAuth();
 
   if (user.role !== "DOCTOR") {
-    throw new Error(
-      "Forbidden"
-    );
+    throw new Error("Forbidden");
   }
 
   return user;
+}
+
+export async function requireUser(): Promise<AuthUser> {
+  const user =
+    await requireAuth();
+
+  if (user.role !== "USER") {
+    throw new Error("Forbidden");
+  }
+
+  return user;
+}
+
+export async function revokeAllSessions(
+  userId: string
+) {
+  await prisma.user.update({
+    where: {
+      id: userId,
+    },
+
+    data: {
+      sessionVersion: {
+        increment: 1,
+      },
+    },
+  });
+
+  await clearSession();
 }

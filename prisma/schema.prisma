@@ -8,25 +8,61 @@ datasource db {
 }
 
 model User {
-  id                   String    @id @default(cuid())
-  email                String    @unique
-  name                 String
-  passwordHash         String
-  phone                String?
-  role                 UserRole  @default(USER)
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  phone        String?
+  role         UserRole   @default(USER)
+  status       UserStatus @default(ACTIVE)
+
   emailVerified        Boolean   @default(false)
   verifyToken          String?   @unique
   verifyTokenExpiresAt DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+
+  passwordResetToken          String?   @unique
+  passwordResetTokenExpiresAt DateTime?
+
+  sessionVersion Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   appointments  Appointment[]
   doctor        Doctor?
   notifications Notification[]
   blogs         Blog[]
   mediaAssets   MediaAsset[]
+  auditLogs     AuditLog[]
 
+  @@index([status])
+  @@index([role])
+  @@index([emailVerified])
   @@map("users")
+}
+
+model AuditLog {
+  id     String  @id @default(cuid())
+  userId String?
+
+  action   String
+  entity   String?
+  entityId String?
+
+  ipAddress String?
+  userAgent String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 model ConsultationInquiry {
@@ -83,7 +119,7 @@ model Pharmacy {
 }
 
 model Doctor {
-  id             String   @id @default(cuid())
+  id             String  @id @default(cuid())
   name           String
   qualification  String
   specialization String?
@@ -91,10 +127,12 @@ model Doctor {
   description    String?
   image          String?
   imagePublicId  String?
-  isActive       Boolean  @default(true)
-  userId         String?  @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive       Boolean @default(true)
+
+  userId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   appointments  Appointment[]
   consultations ConsultationInquiry[]
@@ -105,26 +143,31 @@ model Doctor {
 }
 
 model Appointment {
-  id                 String            @id @default(cuid())
-  name               String
-  email              String
-  concerns           String
-  meetingType        MeetingType
-  appointmentDate    DateTime
-  appointmentTime    String
-  status             AppointmentStatus @default(PENDING)
-  userId             String?
-  doctorId           String
+  id              String            @id @default(cuid())
+  name            String
+  email           String
+  concerns        String
+  meetingType     MeetingType
+  appointmentDate DateTime
+  appointmentTime String
+  status          AppointmentStatus @default(PENDING)
+
+  userId   String?
+  doctorId String
+
   cancelledAt        DateTime?
   cancelledBy        String?
   cancellationReason String?
   userHiddenAt       DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  connectionProvider MeetingProvider   @default(NONE)
 
-  doctor        Doctor         @relation(fields: [doctorId], references: [id])
-  user          User?          @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  connectionProvider MeetingProvider @default(NONE)
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
   meeting       Meeting?
   notifications Notification[]
 
@@ -138,14 +181,17 @@ model Appointment {
 }
 
 model Meeting {
-  id                String          @id @default(cuid())
-  appointmentId     String          @unique
-  type              MeetingType
-  status            MeetingStatus   @default(CREATED)
-  startedAt         DateTime?
-  endedAt           DateTime?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id            String        @id @default(cuid())
+  appointmentId String        @unique
+  type          MeetingType
+  status        MeetingStatus @default(CREATED)
+
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   externalMeetingId String?
   hostUrl           String?
   meetingUrl        String?
@@ -162,15 +208,17 @@ model Meeting {
 }
 
 model Notification {
-  id            String           @id @default(cuid())
+  id            String  @id @default(cuid())
   userId        String?
   doctorId      String?
   appointmentId String?
-  type          NotificationType
-  title         String
-  message       String
-  isRead        Boolean          @default(false)
-  createdAt     DateTime         @default(now())
+
+  type    NotificationType
+  title   String
+  message String
+
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   doctor      Doctor?      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
@@ -220,7 +268,8 @@ model MediaAsset {
   size         Int?
 
   uploadedById String?
-  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  uploadedBy User? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -235,6 +284,12 @@ enum UserRole {
   USER
   ADMIN
   DOCTOR
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
 }
 
 enum AppointmentStatus {

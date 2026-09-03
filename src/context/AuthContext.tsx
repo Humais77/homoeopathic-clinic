@@ -197,68 +197,72 @@ export function AuthProvider({
    * Register
    */
   const register = async (
-    name: string,
-    email: string,
-    password: string,
-    phone?: string
-  ) => {
-    try {
-      setIsLoading(true);
+  name: string,
+  email: string,
+  password: string,
+  phone?: string
+) => {
+  try {
+    setIsLoading(true);
 
-      const response = await fetch(
-        "/api/auth/register",
-        {
-          method: "POST",
+    const response = await fetch(
+      "/api/auth/register",
+      {
+        method: "POST",
 
-          headers: {
-            "Content-Type": "application/json",
-          },
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-          credentials: "include",
+        credentials: "include",
 
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-            phone: phone || null,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          message:
-            data?.message ||
-            "Registration failed.",
+        body: JSON.stringify({
+          name,
           email,
-        };
+          password,
+          phone: phone || null,
+        }),
       }
+    );
 
-      return {
-        success: true,
-        message: data?.message,
-        email: data?.email || email,
-        user: data?.user,
-      };
-    } catch (error) {
-      console.error(
-        "Registration error:",
-        error
-      );
+    const data =
+      await response.json();
 
+    if (!response.ok) {
       return {
         success: false,
         message:
-          "Something went wrong. Please try again.",
+          data?.error ||
+          data?.message ||
+          "Registration failed.",
         email,
       };
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    return {
+      success: true,
+      message: data?.message,
+      email:
+        data?.email || email,
+      user: data?.user,
+    };
+  } catch (error) {
+    console.error(
+      "Registration error:",
+      error
+    );
+
+    return {
+      success: false,
+      message:
+        "Something went wrong. Please try again.",
+      email,
+    };
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   /**
    * Logout

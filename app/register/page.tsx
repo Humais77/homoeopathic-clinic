@@ -50,6 +50,15 @@ export default function RegisterPage() {
       phone
     );
 
+    if (!result.success) {
+      setError(
+        result.message ||
+          "Registration failed."
+      );
+
+      return;
+    }
+
     router.replace(
       `/verify-email?email=${encodeURIComponent(
         result.email

@@ -1,16 +1,24 @@
-// src/app/api/auth/me/route.ts
+import {
+  NextResponse,
+} from "next/server";
 
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/src/lib/auth";
+import {
+  getCurrentUser,
+} from "@/src/lib/auth";
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
+    const user =
+      await getCurrentUser();
 
     if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        {
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
       );
     }
 
@@ -18,11 +26,19 @@ export async function GET() {
       user,
     });
   } catch (error) {
-    console.error("Auth me error:", error);
+    console.error(
+      "Auth me error:",
+      error
+    );
 
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      {
+        error:
+          "Internal server error",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }

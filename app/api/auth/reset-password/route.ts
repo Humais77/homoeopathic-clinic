@@ -6,33 +6,38 @@ import {
 import { prisma } from "@/src/lib/prisma";
 
 import {
-  hashVerificationToken,
-} from "@/src/lib/email-verification";
+  hashPassword,
+} from "@/src/lib/password";
 
 import {
-  verificationRateLimit,
+  hashPasswordResetToken,
+} from "@/src/lib/password-reset";
+
+import {
+  resetPasswordSchema,
+} from "@/src/validators/auth.schema";
+
+import {
+  resetPasswordRateLimit,
 } from "@/src/lib/rate-limit";
 
 import {
-  getClientIp,
-  getUserAgent,
-} from "@/src/lib/security";
+  clearSession,
+} from "@/src/lib/auth";
 
 export async function POST(
   request: NextRequest
 ) {
-  const ip = getClientIp(request);
-
   const rateLimit =
-    await verificationRateLimit.limit(
-      ip
+    await resetPasswordRateLimit.limit(
+      request.ip || "unknown"
     );
 
   if (!rateLimit.success) {
     return NextResponse.json(
       {
         error:
-          "Too many verification attempts.",
+          "Too many requests. Please try again later.",
       },
       {
         status: 429,
@@ -44,16 +49,16 @@ export async function POST(
     const body =
       await request.json();
 
-    const token = body.token;
+    const validation =
+      resetPasswordSchema.safeParse(
+        body
+      );
 
-    if (
-      !token ||
-      typeof token !== "string"
-    ) {
+    if (!validation.success) {
       return NextResponse.json(
         {
           error:
-            "Invalid verification token.",
+            "Invalid password reset request.",
         },
         {
           status: 400,
@@ -61,13 +66,19 @@ export async function POST(
       );
     }
 
+    const {
+      token,
+      password,
+    } = validation.data;
+
     const tokenHash =
-      hashVerificationToken(token);
+      hashPasswordResetToken(token);
 
     const user =
       await prisma.user.findFirst({
         where: {
-          verifyToken: tokenHash,
+          passwordResetToken:
+            tokenHash,
         },
       });
 
@@ -75,7 +86,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Invalid or expired verification link.",
+            "Invalid or expired password reset link.",
         },
         {
           status: 400,
@@ -83,30 +94,24 @@ export async function POST(
       );
     }
 
-    if (user.emailVerified) {
-      return NextResponse.json({
-        success: true,
-        alreadyVerified: true,
-        message:
-          "Your email is already verified.",
-      });
-    }
-
     if (
-      !user.verifyTokenExpiresAt ||
-      user.verifyTokenExpiresAt <
+      !user.passwordResetTokenExpiresAt ||
+      user.passwordResetTokenExpiresAt <
         new Date()
     ) {
       return NextResponse.json(
         {
           error:
-            "This verification link has expired.",
+            "This password reset link has expired.",
         },
         {
           status: 400,
         }
       );
     }
+
+    const passwordHash =
+      await hashPassword(password);
 
     await prisma.user.update({
       where: {
@@ -114,39 +119,45 @@ export async function POST(
       },
 
       data: {
-        emailVerified: true,
-        verifyToken: null,
-        verifyTokenExpiresAt: null,
+        passwordHash,
+
+        passwordResetToken: null,
+
+        passwordResetTokenExpiresAt:
+          null,
+
+        sessionVersion: {
+          increment: 1,
+        },
       },
     });
 
     await prisma.auditLog.create({
       data: {
         userId: user.id,
-        action: "EMAIL_VERIFIED",
+        action: "PASSWORD_RESET",
         entity: "User",
         entityId: user.id,
-        ipAddress: ip,
-        userAgent:
-          getUserAgent(request),
       },
     });
+
+    await clearSession();
 
     return NextResponse.json({
       success: true,
       message:
-        "Email verified successfully.",
+        "Password reset successfully.",
     });
   } catch (error) {
     console.error(
-      "Email verification error:",
+      "Reset password error:",
       error
     );
 
     return NextResponse.json(
       {
         error:
-          "Unable to verify email.",
+          "Unable to reset password.",
       },
       {
         status: 500,

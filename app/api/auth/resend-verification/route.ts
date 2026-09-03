@@ -1,24 +1,64 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
-import { sendVerificationEmail } from "@/src/lib/email";
-import { generateVerificationToken } from "@/src/lib/email-verification";
+
+import {
+  sendVerificationEmail,
+} from "@/src/lib/email";
+
+import {
+  generateVerificationToken,
+} from "@/src/lib/email-verification";
+
+import {
+  resendVerificationRateLimit,
+} from "@/src/lib/rate-limit";
+
+import {
+  getClientIp,
+} from "@/src/lib/security";
 
 export async function POST(
   request: NextRequest
 ) {
+  const ip = getClientIp(request);
+
+  const rateLimit =
+    await resendVerificationRateLimit.limit(
+      ip
+    );
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      {
+        error:
+          "Too many requests. Please try again later.",
+      },
+      {
+        status: 429,
+      }
+    );
+  }
+
   try {
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const email =
       typeof body.email === "string"
-        ? body.email.toLowerCase().trim()
+        ? body.email
+            .toLowerCase()
+            .trim()
         : "";
 
     if (!email) {
       return NextResponse.json(
         {
-          error: "Email is required.",
+          error:
+            "Email is required.",
         },
         {
           status: 400,
@@ -34,12 +74,11 @@ export async function POST(
       });
 
     /*
-     * Don't reveal whether an email exists.
+     * Don't reveal account existence.
      */
     if (!user) {
       return NextResponse.json({
         success: true,
-
         message:
           "If an account exists, a verification email has been sent.",
       });
@@ -60,11 +99,14 @@ export async function POST(
     const {
       token,
       tokenHash,
-    } = generateVerificationToken();
+    } =
+      generateVerificationToken();
 
-    const expiresAt = new Date(
-      Date.now() + 30 * 60 * 1000
-    );
+    const expiresAt =
+      new Date(
+        Date.now() +
+          30 * 60 * 1000
+      );
 
     await prisma.user.update({
       where: {
@@ -73,8 +115,8 @@ export async function POST(
 
       data: {
         verifyToken: tokenHash,
-
-        verifyTokenExpiresAt: expiresAt,
+        verifyTokenExpiresAt:
+          expiresAt,
       },
     });
 
@@ -86,7 +128,6 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-
       message:
         "Verification email sent successfully.",
     });

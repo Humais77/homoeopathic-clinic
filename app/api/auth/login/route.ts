@@ -1,16 +1,60 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
-import { comparePassword } from "@/src/lib/password";
-import { createSession } from "@/src/lib/auth";
+import {
+  comparePassword,
+} from "@/src/lib/password";
 
-import { loginSchema } from "@/src/validators/auth.schema";
+import {
+  createSession,
+} from "@/src/lib/auth";
+
+import {
+  loginSchema,
+} from "@/src/validators/auth.schema";
+
+import {
+  loginRateLimit,
+} from "@/src/lib/rate-limit";
+
+import {
+  getClientIp,
+  getUserAgent,
+} from "@/src/lib/security";
 
 export async function POST(
   request: NextRequest
 ) {
+  const ip = getClientIp(request);
+
+  const rateLimit =
+    await loginRateLimit.limit(ip);
+
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      {
+        error:
+          "Too many login attempts. Please try again later.",
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": Math.ceil(
+            (rateLimit.reset -
+              Date.now()) /
+              1000
+          ).toString(),
+        },
+      }
+    );
+  }
+
   try {
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const validation =
       loginSchema.safeParse(body);
@@ -54,6 +98,18 @@ export async function POST(
       );
     }
 
+    if (user.status !== "ACTIVE") {
+      return NextResponse.json(
+        {
+          error:
+            "Your account is currently unavailable.",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
     const isValid =
       await comparePassword(
         password,
@@ -72,9 +128,6 @@ export async function POST(
       );
     }
 
-    /*
-     * Email verification check.
-     */
     if (!user.emailVerified) {
       return NextResponse.json(
         {
@@ -91,10 +144,22 @@ export async function POST(
       );
     }
 
-    /*
-     * Only verified users get a session.
-     */
-    await createSession(user.id);
+    await createSession(
+      user.id,
+      user.sessionVersion
+    );
+
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "LOGIN_SUCCESS",
+        entity: "User",
+        entityId: user.id,
+        ipAddress: ip,
+        userAgent:
+          getUserAgent(request),
+      },
+    });
 
     return NextResponse.json({
       success: true,
@@ -105,6 +170,9 @@ export async function POST(
         name: user.name,
         phone: user.phone,
         role: user.role,
+        status: user.status,
+        emailVerified:
+          user.emailVerified,
       },
     });
   } catch (error) {
