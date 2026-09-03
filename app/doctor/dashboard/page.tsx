@@ -54,16 +54,46 @@ type Blog = {
   createdAt: string;
   updatedAt: string;
 };
+type ConsultationStatus =
+  | 'PENDING'
+  | 'ASSIGNED'
+  | 'IN_REVIEW'
+  | 'CONTACTED'
+  | 'APPOINTMENT_CREATED'
+  | 'COMPLETED'
+  | 'REJECTED';
 
+type Consultation = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string;
+  status: ConsultationStatus;
+  createdAt: string;
+  treatment: {
+    id: string;
+    name: string;
+  };
+};
 type DashboardData = {
   doctor: Doctor;
+
+  consultations: Consultation[];
+
   appointments: Appointment[];
+
   notifications?: unknown[];
+
   stats: {
     totalAppointments: number;
     pendingAppointments: number;
     confirmedAppointments: number;
     completedAppointments: number;
+
+    totalConsultations: number;
+    pendingConsultations: number;
+    completedConsultations: number;
   };
 };
 
@@ -234,7 +264,55 @@ export default function DoctorDashboardPage() {
       );
     }
   }
+  async function updateConsultationStatus(
+  consultationId: string,
+  status: ConsultationStatus
+) {
+  try {
+    const response = await fetch(
+      `/api/doctor/consultations/${consultationId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+        }),
+      }
+    );
 
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+          'Failed to update consultation'
+      );
+    }
+
+    setData((previous) => {
+      if (!previous) return previous;
+
+      return {
+        ...previous,
+        consultations:
+          previous.consultations.map(
+            (consultation) =>
+              consultation.id === consultationId
+                ? result.consultation
+                : consultation
+          ),
+      };
+    });
+  } catch (error) {
+    alert(
+      error instanceof Error
+        ? error.message
+        : 'Failed to update consultation'
+    );
+  }
+}
   if (loading) {
     return (
       <div className="p-8">
@@ -313,6 +391,15 @@ export default function DoctorDashboardPage() {
               data.stats.completedAppointments
             }
           />
+          <StatCard
+  title="Total Consultations"
+  value={data.stats.totalConsultations}
+/>
+
+<StatCard
+  title="Pending Consultations"
+  value={data.stats.pendingConsultations}
+/>
         </div>
 
         {/* Doctor Profile */}
@@ -524,7 +611,151 @@ export default function DoctorDashboardPage() {
 
           </div>
         </div>
+<div className="mt-8 rounded-2xl bg-white shadow-sm">
+  <div className="border-b border-gray-100 p-6">
+    <h2 className="text-lg font-semibold text-gray-900">
+      Consultation Requests
+    </h2>
 
+    <p className="mt-1 text-sm text-gray-500">
+      Patient consultation requests assigned to you.
+    </p>
+  </div>
+
+  <div className="p-6">
+    {data.consultations.length === 0 ? (
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center">
+        <p className="text-sm text-gray-500">
+          No consultation requests assigned to you.
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-4">
+        {data.consultations.map((consultation) => (
+          <div
+            key={consultation.id}
+            className="rounded-xl border border-gray-100 p-5"
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h3 className="font-semibold text-gray-900">
+                    {consultation.name}
+                  </h3>
+
+                  <ConsultationStatusBadge
+                    status={consultation.status}
+                  />
+                </div>
+
+                <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                  <p className="text-gray-600">
+                    <span className="font-medium">
+                      Treatment:
+                    </span>{' '}
+                    {consultation.treatment.name}
+                  </p>
+
+                  <p className="text-gray-600">
+                    <span className="font-medium">
+                      Email:
+                    </span>{' '}
+                    {consultation.email}
+                  </p>
+
+                  <p className="text-gray-600">
+                    <span className="font-medium">
+                      Phone:
+                    </span>{' '}
+                    {consultation.phone ||
+                      'Not provided'}
+                  </p>
+
+                  <p className="text-gray-500">
+                    <span className="font-medium">
+                      Submitted:
+                    </span>{' '}
+                    {new Date(
+                      consultation.createdAt
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="mt-4 rounded-lg bg-gray-50 p-4">
+                  <p className="text-xs font-semibold uppercase text-gray-400">
+                    Patient Concern
+                  </p>
+
+                  <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                    {consultation.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {consultation.status ===
+                  'ASSIGNED' && (
+                  <button
+                    onClick={() =>
+                      updateConsultationStatus(
+                        consultation.id,
+                        'IN_REVIEW'
+                      )
+                    }
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    Start Review
+                  </button>
+                )}
+
+                {(consultation.status ===
+                  'IN_REVIEW' ||
+                  consultation.status ===
+                    'ASSIGNED') && (
+                  <button
+                    onClick={() =>
+                      updateConsultationStatus(
+                        consultation.id,
+                        'CONTACTED'
+                      )
+                    }
+                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Mark Contacted
+                  </button>
+                )}
+
+                {consultation.status !==
+                  'COMPLETED' &&
+                  consultation.status !==
+                    'REJECTED' && (
+                    <button
+                      onClick={() =>
+                        updateConsultationStatus(
+                          consultation.id,
+                          'COMPLETED'
+                        )
+                      }
+                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                    >
+                      Complete
+                    </button>
+                  )}
+
+                <a
+                  href={`/doctor/consultations/${consultation.id}`}
+                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  View
+                </a>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
         {/* Appointments */}
         <div className="mt-8 rounded-2xl bg-white shadow-sm">
 
@@ -770,7 +1001,39 @@ function ProfileItem({
     </div>
   );
 }
+function ConsultationStatusBadge({
+  status,
+}: {
+  status: ConsultationStatus;
+}) {
+  const classes: Record<
+    ConsultationStatus,
+    string
+  > = {
+    PENDING:
+      'bg-yellow-100 text-yellow-700',
+    ASSIGNED:
+      'bg-blue-100 text-blue-700',
+    IN_REVIEW:
+      'bg-purple-100 text-purple-700',
+    CONTACTED:
+      'bg-indigo-100 text-indigo-700',
+    APPOINTMENT_CREATED:
+      'bg-cyan-100 text-cyan-700',
+    COMPLETED:
+      'bg-green-100 text-green-700',
+    REJECTED:
+      'bg-red-100 text-red-700',
+  };
 
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${classes[status]}`}
+    >
+      {status.replaceAll('_', ' ')}
+    </span>
+  );
+}
 function StatusBadge({
   status,
 }: {

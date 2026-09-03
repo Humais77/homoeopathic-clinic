@@ -30,15 +30,25 @@ model User {
 }
 
 model ConsultationInquiry {
-  id        String   @id @default(cuid())
-  name      String
-  email     String
-  treatment String
-  message   String
-  status    String   @default("PENDING")
+  id          String             @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  treatmentId String
+  message     String
+  status      ConsultationStatus @default(PENDING)
+  doctorId    String?
+
+  doctor    Doctor?   @relation(fields: [doctorId], references: [id])
+  treatment Treatment @relation(fields: [treatmentId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([treatmentId])
+  @@index([doctorId])
+  @@index([status])
+  @@index([createdAt])
   @@map("consultation_inquiries")
 }
 
@@ -46,34 +56,34 @@ model Treatment {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
-  image       String?
-  imagePublicId String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  consultations ConsultationInquiry[]
 
   @@map("treatments")
 }
 
 model Pharmacy {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  image       String?
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  image         String?
   imagePublicId String?
-  address     String?
-  phone       String?
-  website     String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  address       String?
+  phone         String?
+  website       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([isActive])
   @@map("pharmacies")
 }
 
 model Doctor {
-  id             String         @id @default(cuid())
+  id             String   @id @default(cuid())
   name           String
   qualification  String
   specialization String?
@@ -81,16 +91,16 @@ model Doctor {
   description    String?
   image          String?
   imagePublicId  String?
-  isActive       Boolean        @default(true)
-  userId         String?        @unique
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  isActive       Boolean  @default(true)
+  userId         String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  appointments   Appointment[]
-  user           User?          @relation(fields: [userId], references: [id])
-  notifications  Notification[]
+  appointments  Appointment[]
+  consultations ConsultationInquiry[]
+  user          User?                 @relation(fields: [userId], references: [id])
+  notifications Notification[]
 
-  @@index([isActive])
   @@map("doctors")
 }
 
@@ -113,10 +123,10 @@ model Appointment {
   updatedAt          DateTime          @updatedAt
   connectionProvider MeetingProvider   @default(NONE)
 
-  doctor             Doctor            @relation(fields: [doctorId], references: [id])
-  user               User?             @relation(fields: [userId], references: [id])
-  meeting            Meeting?
-  notifications      Notification[]
+  doctor        Doctor         @relation(fields: [doctorId], references: [id])
+  user          User?          @relation(fields: [userId], references: [id])
+  meeting       Meeting?
+  notifications Notification[]
 
   @@index([userId])
   @@index([doctorId])
@@ -142,11 +152,7 @@ model Meeting {
   provider          MeetingProvider @default(NONE)
   roomName          String?
 
-  appointment       Appointment     @relation(
-    fields: [appointmentId],
-    references: [id],
-    onDelete: Cascade
-  )
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
   @@index([provider])
   @@index([status])
@@ -166,23 +172,9 @@ model Notification {
   isRead        Boolean          @default(false)
   createdAt     DateTime         @default(now())
 
-  appointment   Appointment?     @relation(
-    fields: [appointmentId],
-    references: [id],
-    onDelete: Cascade
-  )
-
-  doctor        Doctor?          @relation(
-    fields: [doctorId],
-    references: [id],
-    onDelete: Cascade
-  )
-
-  user          User?            @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctor      Doctor?      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
   @@index([doctorId, isRead])
@@ -192,24 +184,22 @@ model Notification {
 }
 
 model Blog {
-  id       String  @id @default(cuid())
-  title    String
-  slug     String  @unique
-  excerpt  String?
-  content  String
-  category String?
-  image    String?
+  id            String     @id @default(cuid())
+  title         String
+  slug          String     @unique
+  excerpt       String?
+  content       String
+  category      String?
+  image         String?
   imagePublicId String?
-
-  status BlogStatus @default(DRAFT)
+  status        BlogStatus @default(DRAFT)
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
 
   publishedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([status])
   @@index([authorId])
@@ -218,23 +208,19 @@ model Blog {
 }
 
 model MediaAsset {
-  id          String   @id @default(cuid())
-  url         String
-  publicId    String   @unique
+  id           String  @id @default(cuid())
+  url          String
+  publicId     String  @unique
   resourceType String  @default("image")
-  folder      String?
+  folder       String?
   originalName String?
-  format      String?
-  width       Int?
-  height      Int?
-  size        Int?
+  format       String?
+  width        Int?
+  height       Int?
+  size         Int?
 
   uploadedById String?
-  uploadedBy   User? @relation(
-    fields: [uploadedById],
-    references: [id],
-    onDelete: SetNull
-  )
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -297,4 +283,14 @@ enum BlogStatus {
   PUBLISHED
   REJECTED
   ARCHIVED
+}
+
+enum ConsultationStatus {
+  PENDING
+  ASSIGNED
+  IN_REVIEW
+  CONTACTED
+  APPOINTMENT_CREATED
+  COMPLETED
+  REJECTED
 }

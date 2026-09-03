@@ -137,12 +137,12 @@ export default function AdminDashboardPage() {
 
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="text-sm font-medium text-gray-500">
-              Services
-            </div>
+  Treatments
+</div>
 
             <div className="text-3xl font-bold text-gray-900 mt-2">
-              {stats.services}
-            </div>
+  {stats.services}
+</div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -199,17 +199,17 @@ export default function AdminDashboardPage() {
           </Link>
 
           <Link
-            href="/admin/services"
-            className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow text-center"
-          >
-            <div className="text-lg font-semibold text-gray-900">
-              Services
-            </div>
+  href="/admin/treatments"
+  className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow text-center"
+>
+  <div className="text-lg font-semibold text-gray-900">
+    Treatments
+  </div>
 
-            <div className="text-sm text-gray-500 mt-1">
-              Manage services
-            </div>
-          </Link>
+  <div className="text-sm text-gray-500 mt-1">
+    Manage treatments
+  </div>
+</Link>
           <Link
   href="/admin/blogs"
   className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow text-center"

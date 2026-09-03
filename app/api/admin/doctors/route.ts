@@ -3,46 +3,19 @@ import { requireAdmin } from "@/src/lib/auth";
 import { prisma } from "@/src/lib/prisma";
 
 export async function GET() {
-  try {
-    await requireAdmin();
+  const doctors = await prisma.doctor.findMany({
+    where: {
+      isActive: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
-    const doctors =
-      await prisma.doctor.findMany({
-        orderBy: {
-          createdAt: "desc",
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              role: true,
-              emailVerified: true,
-            },
-          },
-        },
-      });
-
-    return NextResponse.json({
-      success: true,
-      doctors,
-    });
-  } catch (error) {
-    console.error(
-      "Admin doctors GET error:",
-      error
-    );
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to load doctors",
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json({
+    success: true,
+    doctors,
+  });
 }
 
 export async function POST(

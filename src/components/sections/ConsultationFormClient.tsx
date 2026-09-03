@@ -12,29 +12,38 @@ export function ConsultationFormClient() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    treatment: '',
+    phone: '',
+    treatmentId: '',
     message: '',
   });
+
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  // Fetch treatments from database
   useEffect(() => {
     const fetchTreatments = async () => {
       setLoading(true);
+
       try {
-        const response = await fetch('/api/treatments');
+        const response = await fetch('/api/treatments', {
+          cache: 'no-store',
+        });
+
         const data = await response.json();
-        if (response.ok) {
-          setTreatments(data.treatments);
-        } else {
-          console.error('Failed to fetch treatments:', data.error);
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || 'Failed to load treatments'
+          );
         }
+
+        setTreatments(data.treatments ?? []);
       } catch (error) {
         console.error('Error fetching treatments:', error);
+        setError('Unable to load treatments.');
       } finally {
         setLoading(false);
       }
@@ -48,14 +57,17 @@ export function ConsultationFormClient() {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setSubmitting(true);
     setError('');
     setSuccess(false);
@@ -63,28 +75,39 @@ export function ConsultationFormClient() {
     try {
       const response = await fetch('/api/consultation', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit');
+        throw new Error(
+          data.error || 'Failed to submit consultation'
+        );
       }
 
       setSuccess(true);
+
       setFormData({
         name: '',
         email: '',
-        treatment: '',
+        phone: '',
+        treatmentId: '',
         message: '',
       });
 
-      // Reset success message after 5 seconds
-      setTimeout(() => setSuccess(false), 5000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setTimeout(() => {
+        setSuccess(false);
+      }, 5000);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -96,21 +119,23 @@ export function ConsultationFormClient() {
         Get Online Consultation
       </h2>
 
-      {/* Success Message */}
       {success && (
         <div className="mt-4 rounded-lg bg-white/20 p-3 text-sm text-white">
-          ✅ Consultation request submitted successfully! We'll contact you soon.
+          ✅ Consultation request submitted successfully!
+          We&apos;ll contact you soon.
         </div>
       )}
 
-      {/* Error Message */}
       {error && (
         <div className="mt-4 rounded-lg bg-red-500/20 p-3 text-sm text-white">
           ❌ {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+      <form
+        onSubmit={handleSubmit}
+        className="mt-7 space-y-5"
+      >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label
@@ -157,7 +182,28 @@ export function ConsultationFormClient() {
 
         <div>
           <label
-            htmlFor="treatment"
+            htmlFor="phone"
+            className="mb-2 block text-[9px] font-semibold uppercase tracking-wider text-white/90"
+          >
+            Phone Number
+          </label>
+
+          <input
+            id="phone"
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="Enter your phone number"
+            className="h-11 w-full rounded-md border-0 bg-white/20 px-3 text-sm text-white outline-none placeholder:text-white/80 focus:bg-white/25 focus:ring-2 focus:ring-white/40"
+            required
+            disabled={submitting}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="treatmentId"
             className="mb-2 block text-[9px] font-semibold uppercase tracking-wider text-white/90"
           >
             {CONSULTATION.form.treatmentLabel}
@@ -165,19 +211,29 @@ export function ConsultationFormClient() {
 
           <div className="relative">
             <select
-              id="treatment"
-              name="treatment"
-              value={formData.treatment}
+              id="treatmentId"
+              name="treatmentId"
+              value={formData.treatmentId}
               onChange={handleChange}
               className="h-11 w-full appearance-none rounded-md border-0 bg-white/20 px-3 pr-10 text-sm text-white outline-none focus:bg-white/25 focus:ring-2 focus:ring-white/40 disabled:opacity-50"
               required
               disabled={submitting || loading}
             >
-              <option value="" className="text-gray-700">
-                {loading ? 'Loading treatments...' : 'Select Treatment'}
+              <option
+                value=""
+                className="text-gray-700"
+              >
+                {loading
+                  ? 'Loading treatments...'
+                  : 'Select Treatment'}
               </option>
+
               {treatments.map((treatment) => (
-                <option key={treatment.id} value={treatment.name} className="text-gray-700">
+                <option
+                  key={treatment.id}
+                  value={treatment.id}
+                  className="text-gray-700"
+                >
                   {treatment.name}
                 </option>
               ))}
@@ -213,9 +269,11 @@ export function ConsultationFormClient() {
         <button
           type="submit"
           disabled={submitting || loading}
-          className="h-11 w-full rounded-full bg-white px-6 text-sm font-bold tracking-wide text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-100 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-11 w-full rounded-full bg-white px-6 text-sm font-bold tracking-wide text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-100 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? 'Submitting...' : CONSULTATION.form.buttonText}
+          {submitting
+            ? 'Submitting...'
+            : CONSULTATION.form.buttonText}
         </button>
       </form>
     </div>
