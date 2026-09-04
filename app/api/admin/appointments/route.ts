@@ -6,29 +6,11 @@ import {
   prisma,
 } from "@/src/lib/prisma";
 
-import {
-  getAdminFromSession,
-} from "@/src/lib/auth";
+import { requireAdmin } from "@/src/lib/auth";
 
 export async function GET() {
   try {
-    const session =
-      await getAdminFromSession();
-
-    if (
-      !session ||
-      session.role !== "ADMIN"
-    ) {
-      return NextResponse.json(
-        {
-          message:
-            "Unauthorized.",
-        },
-        {
-          status: 401,
-        }
-      );
-    }
+    await requireAdmin();
 
     const appointments =
       await prisma.appointment.findMany({
@@ -44,15 +26,12 @@ export async function GET() {
           },
           meeting: true,
         },
-
         orderBy: [
           {
-            appointmentDate:
-              "asc",
+            appointmentDate: "asc",
           },
           {
-            createdAt:
-              "desc",
+            createdAt: "desc",
           },
         ],
       });
@@ -62,6 +41,26 @@ export async function GET() {
       appointments,
     });
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Unauthorized"
+    ) {
+      return NextResponse.json(
+        { message: "Unauthorized." },
+        { status: 401 }
+      );
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "Forbidden"
+    ) {
+      return NextResponse.json(
+        { message: "Forbidden." },
+        { status: 403 }
+      );
+    }
+
     console.error(
       "Admin appointments error:",
       error
@@ -72,9 +71,7 @@ export async function GET() {
         message:
           "Unable to load appointments.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }

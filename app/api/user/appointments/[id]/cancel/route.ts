@@ -12,7 +12,9 @@ import {
 import {
   sendNotification,
 } from "@/src/lib/send-notification";
-
+import {
+  requireUser,
+} from "@/src/lib/auth";
 type Context = {
   params: Promise<{
     id: string;
@@ -27,7 +29,7 @@ export async function POST(
     const { id } = await context.params;
 
     const session =
-      await getAdminFromSession();
+  await requireUser();
 
     if (
       !session ||

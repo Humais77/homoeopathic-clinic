@@ -1,22 +1,24 @@
 import { NextResponse } from "next/server";
 import { ably } from "@/src/lib/ably";
-import { getAdminFromSession } from "@/src/lib/auth";
+import {
+  getCurrentUser,
+} from "@/src/lib/auth";
 
 export async function GET() {
   try {
-    const session =
-      await getAdminFromSession();
+   const session =
+  await getCurrentUser();
 
-    if (!session) {
-      return NextResponse.json(
-        {
-          message: "Unauthorized",
-        },
-        {
-          status: 401,
-        }
-      );
+if (!session) {
+  return NextResponse.json(
+    {
+      message: "Unauthorized",
+    },
+    {
+      status: 401,
     }
+  );
+}
 
     const capabilities: Record<
       string,

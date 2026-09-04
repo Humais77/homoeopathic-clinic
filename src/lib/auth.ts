@@ -151,42 +151,35 @@ export async function clearSession() {
   );
 }
 
-export async function getCurrentUser(): Promise<
-  AuthUser | null
-> {
-  const session =
-    await getSession();
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  const session = await getSession();
 
   if (!session) {
     return null;
   }
 
-  const user =
-    await prisma.user.findUnique({
-      where: {
-        id: session.userId,
-      },
-
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        role: true,
-        status: true,
-        emailVerified: true,
-        sessionVersion: true,
-      },
-    });
+  const user = await prisma.user.findUnique({
+    where: {
+      id: session.userId,
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      phone: true,
+      role: true,
+      status: true,
+      emailVerified: true,
+      sessionVersion: true,
+    },
+  });
 
   if (!user) {
     return null;
   }
 
-  if (
-    user.sessionVersion !==
-    session.sessionVersion
-  ) {
+  // Invalidate sessions created before a password/session reset
+  if (user.sessionVersion !== session.sessionVersion) {
     return null;
   }
 
@@ -205,14 +198,12 @@ export async function getCurrentUser(): Promise<
     phone: user.phone,
     role: user.role,
     status: user.status,
-    emailVerified:
-      user.emailVerified,
+    emailVerified: user.emailVerified,
   };
 }
 
 export async function requireAuth(): Promise<AuthUser> {
-  const user =
-    await getCurrentUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     throw new Error("Unauthorized");
@@ -222,8 +213,7 @@ export async function requireAuth(): Promise<AuthUser> {
 }
 
 export async function requireAdmin(): Promise<AuthUser> {
-  const user =
-    await requireAuth();
+  const user = await requireAuth();
 
   if (user.role !== "ADMIN") {
     throw new Error("Forbidden");
@@ -233,8 +223,7 @@ export async function requireAdmin(): Promise<AuthUser> {
 }
 
 export async function requireDoctor(): Promise<AuthUser> {
-  const user =
-    await requireAuth();
+  const user = await requireAuth();
 
   if (user.role !== "DOCTOR") {
     throw new Error("Forbidden");
@@ -244,8 +233,7 @@ export async function requireDoctor(): Promise<AuthUser> {
 }
 
 export async function requireUser(): Promise<AuthUser> {
-  const user =
-    await requireAuth();
+  const user = await requireAuth();
 
   if (user.role !== "USER") {
     throw new Error("Forbidden");
@@ -270,4 +258,7 @@ export async function revokeAllSessions(
   });
 
   await clearSession();
+}
+export async function getAdminFromSession() {
+  return getCurrentUser();
 }

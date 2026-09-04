@@ -8,7 +8,9 @@ import { prisma } from "@/src/lib/prisma";
 import {
   getAdminFromSession,
 } from "@/src/lib/auth";
-
+import {
+  requireUser,
+} from "@/src/lib/auth";
 type Context = {
   params: Promise<{
     id: string;
@@ -22,8 +24,8 @@ export async function DELETE(
   try {
     const { id } = await context.params;
 
-    const session =
-      await getAdminFromSession();
+   const session =
+  await requireUser();
 
     if (
       !session ||

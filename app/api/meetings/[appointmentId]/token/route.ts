@@ -2,7 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { createMeetingToken, livekitHost } from "@/src/lib/meeting";
-import { getAdminFromSession } from "@/src/lib/auth";
+import {
+  getCurrentUser,
+} from "@/src/lib/auth";
 
 type Context = {
   params: Promise<{
@@ -13,7 +15,19 @@ type Context = {
 export async function POST(request: NextRequest, context: Context) {
   try {
     const { appointmentId } = await context.params;
-    const session = await getAdminFromSession();
+    const session =
+  await getCurrentUser();
+
+if (!session) {
+  return NextResponse.json(
+    {
+      message: "Unauthorized.",
+    },
+    {
+      status: 401,
+    }
+  );
+}
 
     if (!session) {
       return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
