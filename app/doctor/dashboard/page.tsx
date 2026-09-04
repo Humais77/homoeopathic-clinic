@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Appointment = {
@@ -455,7 +456,22 @@ export default function DoctorDashboardPage() {
 
           </div>
         </div>
+        <Link
+  href="/doctor/schedule"
+  className="rounded-xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+>
+  <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+    📅
+  </div>
 
+  <h3 className="font-semibold text-gray-900">
+    My Schedule
+  </h3>
+
+  <p className="mt-1 text-sm text-gray-500">
+    Manage working hours and appointment availability.
+  </p>
+</Link>
         {/* My Blogs */}
         <div className="mt-8 rounded-2xl bg-white shadow-sm">
 

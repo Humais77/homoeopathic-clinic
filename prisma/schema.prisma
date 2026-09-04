@@ -139,6 +139,10 @@ model Doctor {
   user          User?                 @relation(fields: [userId], references: [id])
   notifications Notification[]
 
+  schedule       DoctorSchedule?
+  slots          AvailableSlot[]
+  scheduleBlocks DoctorScheduleBlock[]
+
   @@map("doctors")
 }
 
@@ -155,6 +159,8 @@ model Appointment {
   userId   String?
   doctorId String
 
+  slotId String? @unique
+
   cancelledAt        DateTime?
   cancelledBy        String?
   cancellationReason String?
@@ -168,6 +174,7 @@ model Appointment {
   doctor Doctor @relation(fields: [doctorId], references: [id])
   user   User?  @relation(fields: [userId], references: [id])
 
+  slot          AvailableSlot? @relation(fields: [slotId], references: [id])
   meeting       Meeting?
   notifications Notification[]
 
@@ -280,6 +287,88 @@ model MediaAsset {
   @@map("media_assets")
 }
 
+model DoctorSchedule {
+  id           String  @id @default(cuid())
+  doctorId     String  @unique
+  timezone     String  @default("Asia/Karachi")
+  slotDuration Int     @default(30)
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor       Doctor              @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  workingHours DoctorWorkingHour[]
+
+  @@map("doctor_schedules")
+}
+
+model DoctorWorkingHour {
+  id         String  @id @default(cuid())
+  scheduleId String
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  isActive   Boolean @default(true)
+
+  schedule DoctorSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@index([dayOfWeek])
+  @@map("doctor_working_hours")
+}
+
+model DoctorScheduleBlock {
+  id       String   @id @default(cuid())
+  doctorId String
+  date     DateTime
+  reason   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, date])
+  @@index([doctorId, date])
+  @@map("doctor_schedule_blocks")
+}
+
+model AvailableSlot {
+  id            String     @id @default(cuid())
+  doctorId      String
+  date          DateTime
+  startTime     String
+  endTime       String
+  status        SlotStatus @default(AVAILABLE)
+  blockedReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor      Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment Appointment?
+
+  @@unique([doctorId, date, startTime])
+  @@index([doctorId, date])
+  @@index([doctorId, status])
+  @@index([date])
+  @@map("available_slots")
+}
+
+model ClinicScheduleBlock {
+  id     String   @id @default(cuid())
+  date   DateTime
+  reason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([date])
+  @@index([date])
+  @@map("clinic_schedule_blocks")
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -348,4 +437,10 @@ enum ConsultationStatus {
   APPOINTMENT_CREATED
   COMPLETED
   REJECTED
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
 }

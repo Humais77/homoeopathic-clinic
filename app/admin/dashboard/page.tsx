@@ -157,7 +157,7 @@ export default function AdminDashboardPage() {
 
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
 
           <Link
             href="/admin/appointments"
@@ -221,6 +221,22 @@ export default function AdminDashboardPage() {
   <div className="text-sm text-gray-500 mt-1">
     Create and manage blogs
   </div>
+</Link>
+<Link
+  href="/admin/schedules"
+  className="rounded-xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+>
+  <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
+    📅
+  </div>
+
+  <h3 className="font-semibold text-gray-900">
+    Schedules
+  </h3>
+
+  <p className="mt-1 text-sm text-gray-500">
+    Manage doctor working hours and appointment slots.
+  </p>
 </Link>
 
         </div>
