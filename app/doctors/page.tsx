@@ -1,8 +1,8 @@
 import { PageHero } from "@/src/components/sections/PageHero";
-import { DoctorSpecialists } from "@/src/components/sections/DoctorsSpecialists";
 import { TrustedPharmacies } from "@/src/components/sections/TrustedPharmacies";
 import { FounderCeoHome } from "@/src/components/sections/FounderCeoHome";
 import { StartJourney } from "@/src/components/sections/StartJourney";
+import { DoctorsSpecialists } from "@/src/components/sections/DoctorsSpecialists";
 
 export const metadata = {
   title: "Our Doctors - Homoeopathic Clinic",
@@ -20,7 +20,7 @@ export default function DoctorsPage() {
         backgroundImage="/images/DoctorsHero.png"
       />
       <FounderCeoHome/>
-      <DoctorSpecialists/>
+      <DoctorsSpecialists />
       <TrustedPharmacies/>
       <StartJourney/>
     </main>
