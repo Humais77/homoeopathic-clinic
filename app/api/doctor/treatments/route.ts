@@ -3,10 +3,10 @@ import { prisma } from "@/src/lib/prisma";
 import { getCurrentUser } from "@/src/lib/auth";
 import { slugify } from "@/src/lib/slugify";
 
-async function requireAdmin() {
+async function requireDoctor() {
   const user = await getCurrentUser();
 
-  if (!user || user.role !== "ADMIN") {
+  if (!user || user.role !== "DOCTOR") {
     return null;
   }
 
@@ -33,7 +33,7 @@ async function createUniqueSlug(name: string) {
 
 export async function GET() {
   try {
-    const user = await requireAdmin();
+    const user = await requireDoctor();
 
     if (!user) {
       return NextResponse.json(
@@ -43,15 +43,8 @@ export async function GET() {
     }
 
     const treatments = await prisma.treatment.findMany({
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
+      where: {
+        authorId: user.id,
       },
       orderBy: {
         createdAt: "desc",
@@ -62,10 +55,7 @@ export async function GET() {
       treatments,
     });
   } catch (error) {
-    console.error(
-      "GET /api/admin/treatments error:",
-      error
-    );
+    console.error(error);
 
     return NextResponse.json(
       { error: "Failed to fetch treatments" },
@@ -76,7 +66,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin();
+    const user = await requireDoctor();
 
     if (!user) {
       return NextResponse.json(
@@ -95,71 +85,69 @@ export async function POST(request: Request) {
       image,
       imagePublicId,
       status,
-      isActive,
     } = body;
 
     if (!name?.trim()) {
       return NextResponse.json(
-        { error: "Treatment name is required" },
+        {
+          error: "Treatment name is required",
+        },
         { status: 400 }
       );
     }
 
     const slug = await createUniqueSlug(name);
 
-    const allowedStatuses = [
-      "DRAFT",
-      "PENDING_REVIEW",
-      "PUBLISHED",
-      "REJECTED",
-      "ARCHIVED",
-    ];
-
-    const treatmentStatus = allowedStatuses.includes(status)
-      ? status
-      : "DRAFT";
+    /**
+     * IMPORTANT:
+     *
+     * Doctor can NEVER publish directly.
+     */
+    const safeStatus =
+      status === "PENDING_REVIEW"
+        ? "PENDING_REVIEW"
+        : "DRAFT";
 
     const treatment = await prisma.treatment.create({
       data: {
         name: name.trim(),
         slug,
+
         category: category?.trim() || null,
-        description: description?.trim() || null,
-        content: content?.trim() || null,
+
+        description:
+          description?.trim() || null,
+
+        content:
+          content?.trim() || null,
+
         image: image || null,
-        imagePublicId: imagePublicId || null,
 
-        status: treatmentStatus,
+        imagePublicId:
+          imagePublicId || null,
 
-        isActive:
-          typeof isActive === "boolean"
-            ? isActive
-            : true,
+        status: safeStatus,
+
+        isActive: false,
 
         authorId: user.id,
-
-        reviewedAt:
-          treatmentStatus === "PUBLISHED"
-            ? new Date()
-            : null,
-
-        reviewedById:
-          treatmentStatus === "PUBLISHED"
-            ? user.id
-            : null,
       },
     });
 
     return NextResponse.json(
       {
-        message: "Treatment created successfully",
+        message:
+          safeStatus === "PENDING_REVIEW"
+            ? "Treatment submitted for review"
+            : "Treatment saved as draft",
+
         treatment,
       },
       { status: 201 }
     );
   } catch (error) {
     console.error(
-      "POST /api/admin/treatments error:",
+      "POST /api/doctor/treatments error:",
       error
     );
 

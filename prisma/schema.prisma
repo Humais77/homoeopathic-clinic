@@ -32,6 +32,7 @@ model User {
   doctor        Doctor?
   notifications Notification[]
   blogs         Blog[]
+  treatments    Treatment[]
   mediaAssets   MediaAsset[]
   auditLogs     AuditLog[]
 
@@ -89,15 +90,38 @@ model ConsultationInquiry {
 }
 
 model Treatment {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id String @id @default(cuid())
+
+  name String
+  slug String @unique
+
   description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  content     String?
+
+  image         String?
+  imagePublicId String?
+
+  category String?
+
+  status TreatmentStatus @default(DRAFT)
+
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id])
+
+  reviewedAt   DateTime?
+  reviewedById String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   consultations ConsultationInquiry[]
 
+  @@index([status])
+  @@index([authorId])
+  @@index([isActive])
+  @@index([createdAt])
   @@map("treatments")
 }
 
@@ -443,4 +467,12 @@ enum SlotStatus {
   AVAILABLE
   BOOKED
   BLOCKED
+}
+
+enum TreatmentStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
 }

@@ -9,10 +9,10 @@ type Props = {
   }>;
 };
 
-async function requireAdmin() {
+async function requireDoctor() {
   const user = await getCurrentUser();
 
-  if (!user || user.role !== "ADMIN") {
+  if (!user || user.role !== "DOCTOR") {
     return null;
   }
 
@@ -48,7 +48,7 @@ export async function GET(
   { params }: Props
 ) {
   try {
-    const user = await requireAdmin();
+    const user = await requireDoctor();
 
     if (!user) {
       return NextResponse.json(
@@ -59,17 +59,10 @@ export async function GET(
 
     const { id } = await params;
 
-    const treatment = await prisma.treatment.findUnique({
-      where: { id },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
+    const treatment = await prisma.treatment.findFirst({
+      where: {
+        id,
+        authorId: user.id,
       },
     });
 
@@ -98,7 +91,7 @@ export async function PATCH(
   { params }: Props
 ) {
   try {
-    const user = await requireAdmin();
+    const user = await requireDoctor();
 
     if (!user) {
       return NextResponse.json(
@@ -109,9 +102,13 @@ export async function PATCH(
 
     const { id } = await params;
 
-    const existing = await prisma.treatment.findUnique({
-      where: { id },
-    });
+    const existing =
+      await prisma.treatment.findFirst({
+        where: {
+          id,
+          authorId: user.id,
+        },
+      });
 
     if (!existing) {
       return NextResponse.json(
@@ -130,7 +127,6 @@ export async function PATCH(
       image,
       imagePublicId,
       status,
-      isActive,
     } = body;
 
     const data: Record<string, unknown> = {};
@@ -147,7 +143,8 @@ export async function PATCH(
     }
 
     if (typeof category === "string") {
-      data.category = category.trim() || null;
+      data.category =
+        category.trim() || null;
     }
 
     if (typeof description === "string") {
@@ -156,7 +153,8 @@ export async function PATCH(
     }
 
     if (typeof content === "string") {
-      data.content = content.trim() || null;
+      data.content =
+        content.trim() || null;
     }
 
     if (image !== undefined) {
@@ -168,107 +166,48 @@ export async function PATCH(
         imagePublicId || null;
     }
 
-    if (
-      [
-        "DRAFT",
-        "PENDING_REVIEW",
-        "PUBLISHED",
-        "REJECTED",
-        "ARCHIVED",
-      ].includes(status)
-    ) {
-      data.status = status;
-
-      if (status === "PUBLISHED") {
-        data.reviewedAt = new Date();
-        data.reviewedById = user.id;
-      }
+    /**
+     * Doctor can ONLY use:
+     * DRAFT
+     * PENDING_REVIEW
+     */
+    if (status === "PENDING_REVIEW") {
+      data.status = "PENDING_REVIEW";
+      data.isActive = false;
+    } else if (status === "DRAFT") {
+      data.status = "DRAFT";
+      data.isActive = false;
     }
 
-    if (typeof isActive === "boolean") {
-      data.isActive = isActive;
-    }
-
-    const treatment = await prisma.treatment.update({
-      where: { id },
-      data,
-    });
+    /**
+     * Explicitly prevent:
+     *
+     * PUBLISHED
+     * ARCHIVED
+     */
+    const treatment =
+      await prisma.treatment.update({
+        where: { id },
+        data,
+      });
 
     return NextResponse.json({
-      message: "Treatment updated successfully",
+      message:
+        treatment.status === "PENDING_REVIEW"
+          ? "Treatment submitted for review"
+          : "Treatment saved successfully",
+
       treatment,
     });
   } catch (error) {
     console.error(
-      "PATCH /api/admin/treatments/[id] error:",
+      "PATCH /api/doctor/treatments/[id] error:",
       error
     );
 
     return NextResponse.json(
       {
         error: "Failed to update treatment",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(
-  _request: Request,
-  { params }: Props
-) {
-  try {
-    const user = await requireAdmin();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
-    const { id } = await params;
-
-    const treatment = await prisma.treatment.findUnique({
-      where: { id },
-    });
-
-    if (!treatment) {
-      return NextResponse.json(
-        { error: "Treatment not found" },
-        { status: 404 }
-      );
-    }
-
-    await prisma.treatment.delete({
-      where: { id },
-    });
-
-    if (treatment.imagePublicId) {
-      try {
-        const cloudinary =
-          (await import("@/src/lib/cloudinary")).default;
-
-        await cloudinary.uploader.destroy(
-          treatment.imagePublicId
-        );
-      } catch (cloudinaryError) {
-        console.error(
-          "Cloudinary delete failed:",
-          cloudinaryError
-        );
-      }
-    }
-
-    return NextResponse.json({
-      message: "Treatment deleted successfully",
-    });
-  } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        error: "Failed to delete treatment",
       },
       { status: 500 }
     );

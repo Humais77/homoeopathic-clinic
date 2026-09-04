@@ -55,6 +55,25 @@ type Blog = {
   createdAt: string;
   updatedAt: string;
 };
+type TreatmentStatus =
+  | "DRAFT"
+  | "PENDING_REVIEW"
+  | "PUBLISHED"
+  | "REJECTED"
+  | "ARCHIVED";
+
+type Treatment = {
+  id: string;
+  name: string;
+  slug: string;
+  category: string | null;
+  description: string | null;
+  image: string | null;
+  status: TreatmentStatus;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
 type ConsultationStatus =
   | 'PENDING'
   | 'ASSIGNED'
@@ -116,6 +135,10 @@ export default function DoctorDashboardPage() {
 
   const [updatingId, setUpdatingId] =
     useState<string | null>(null);
+
+    const [treatments, setTreatments] = useState<Treatment[]>([]);
+const [treatmentsLoading, setTreatmentsLoading] = useState(true);
+
 
   async function loadDashboard() {
     try {
@@ -184,6 +207,7 @@ export default function DoctorDashboardPage() {
   useEffect(() => {
     loadDashboard();
     loadBlogs();
+     loadTreatments();
   }, []);
 
   async function updateAppointmentStatus(
@@ -265,6 +289,31 @@ export default function DoctorDashboardPage() {
       );
     }
   }
+
+  async function loadTreatments() {
+  try {
+    setTreatmentsLoading(true);
+
+    const response = await fetch("/api/doctor/treatments", {
+      cache: "no-store",
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || "Failed to load treatments"
+      );
+    }
+
+    setTreatments(result.treatments || []);
+  } catch (error) {
+    console.error("Failed to load doctor treatments:", error);
+  } finally {
+    setTreatmentsLoading(false);
+  }
+}
+
   async function updateConsultationStatus(
   consultationId: string,
   status: ConsultationStatus
@@ -627,6 +676,131 @@ export default function DoctorDashboardPage() {
 
           </div>
         </div>
+
+            <div className="mt-8 rounded-2xl bg-white shadow-sm">
+  <div className="flex flex-col gap-4 border-b border-gray-100 p-6 md:flex-row md:items-center md:justify-between">
+    <div>
+      <h2 className="text-lg font-semibold text-gray-900">
+        My Treatments
+      </h2>
+
+      <p className="mt-1 text-sm text-gray-500">
+        Create and manage treatment information for
+        review and publication.
+      </p>
+    </div>
+
+    <Link
+      href="/doctor/treatments/create"
+      className="inline-flex w-fit items-center rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-primary-700"
+    >
+      + Create Treatment
+    </Link>
+  </div>
+
+  <div className="p-6">
+    {treatmentsLoading ? (
+      <p className="text-sm text-gray-500">
+        Loading treatments...
+      </p>
+    ) : treatments.length === 0 ? (
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center">
+        <h3 className="font-semibold text-gray-900">
+          No treatments yet
+        </h3>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Create your first treatment and submit it
+          for admin review.
+        </p>
+
+        <Link
+          href="/doctor/treatments/create"
+          className="mt-4 inline-flex rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
+        >
+          Create Treatment
+        </Link>
+      </div>
+    ) : (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {treatments.map((treatment) => (
+          <div
+            key={treatment.id}
+            className="overflow-hidden rounded-xl border border-gray-100 bg-white"
+          >
+            {treatment.image ? (
+              <div className="h-40 overflow-hidden bg-gray-100">
+                <img
+                  src={treatment.image}
+                  alt={treatment.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="flex h-40 items-center justify-center bg-gray-100">
+                <span className="text-sm text-gray-400">
+                  No image
+                </span>
+              </div>
+            )}
+
+            <div className="p-5">
+              <div className="mb-3">
+                <TreatmentStatusBadge
+                  status={treatment.status}
+                />
+              </div>
+
+              <h3 className="line-clamp-2 font-semibold text-gray-900">
+                {treatment.name}
+              </h3>
+
+              {treatment.category && (
+                <p className="mt-1 text-xs font-medium text-primary-600">
+                  {treatment.category}
+                </p>
+              )}
+
+              {treatment.description && (
+                <p className="mt-2 line-clamp-2 text-sm text-gray-500">
+                  {treatment.description}
+                </p>
+              )}
+
+              <p className="mt-3 text-xs text-gray-400">
+                Created{" "}
+                {new Date(
+                  treatment.createdAt
+                ).toLocaleDateString()}
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {treatment.status === "PUBLISHED" && (
+                  <Link
+                    href={`/treatments/${treatment.slug}`}
+                    target="_blank"
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    View
+                  </Link>
+                )}
+
+                {treatment.status !== "PUBLISHED" && (
+                  <Link
+                    href={`/doctor/treatments/${treatment.id}`}
+                    className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+                  >
+                    Edit
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
 <div className="mt-8 rounded-2xl bg-white shadow-sm">
   <div className="border-b border-gray-100 p-6">
     <h2 className="text-lg font-semibold text-gray-900">
@@ -1114,6 +1288,28 @@ function BlogStatusBadge({
       className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${classes[status]}`}
     >
       {status.replace("_", " ")}
+    </span>
+  );
+}
+
+function TreatmentStatusBadge({
+  status,
+}: {
+  status: TreatmentStatus;
+}) {
+  const classes: Record<TreatmentStatus, string> = {
+    DRAFT: "bg-gray-100 text-gray-700",
+    PENDING_REVIEW: "bg-yellow-100 text-yellow-700",
+    PUBLISHED: "bg-green-100 text-green-700",
+    REJECTED: "bg-red-100 text-red-700",
+    ARCHIVED: "bg-purple-100 text-purple-700",
+  };
+
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${classes[status]}`}
+    >
+      {status.replaceAll("_", " ")}
     </span>
   );
 }
