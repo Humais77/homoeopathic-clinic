@@ -53,9 +53,8 @@ export async function AppointmentBooking() {
               </h3>
 
               <p className="mx-auto mt-1 max-w-xl text-sm text-gray-600">
-                You need to be logged in to book
-                an appointment. Please log in or
-                create an account to continue.
+                You need to be logged in to book an appointment. Please log
+                in or create an account to continue.
               </p>
 
               <a
@@ -67,22 +66,16 @@ export async function AppointmentBooking() {
             </div>
           ) : (
             <div className="mb-6 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-              You are logged in as{" "}
-              <strong>{user.name}</strong>. You
-              can book your appointment below.
+              You are logged in as <strong>{user.name}</strong>. You can book
+              your appointment below.
             </div>
           )}
 
           <AppointmentBookingClient
-            meetingTypes={
-              APPOINTMENT_BOOKING.meetingTypes
-            }
+            meetingTypes={APPOINTMENT_BOOKING.meetingTypes}
             doctors={doctors}
-            slots={APPOINTMENT_BOOKING.slots}
             form={APPOINTMENT_BOOKING.form}
-            connectionMethods={
-              ONLINE_CONSULTATION.methods
-            }
+            connectionMethods={ONLINE_CONSULTATION.methods}
             isAuthenticated={!!user}
           />
         </div>

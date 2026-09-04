@@ -1,20 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import {
   useAppointmentBooking,
   type MeetingType as BookingMeetingType,
 } from "./AppointmentBookingProvider";
 
 import { ConnectionMethods } from "./ConnectionMethods";
-
-type MeetingType = {
-  id: string;
-  title: string;
-  description: string;
-  type: string;
-};
 
 type Doctor = {
   id: string;
@@ -46,10 +40,17 @@ type ConnectionMethodOption = {
   type: string;
 };
 
+type AvailableSlot = {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: "AVAILABLE" | "BOOKED" | "BLOCKED";
+};
+
 type Props = {
   meetingTypes: MeetingOption[];
   doctors: Doctor[];
-  slots: string[];
   form: FormData;
   connectionMethods: ConnectionMethodOption[];
   isAuthenticated: boolean;
@@ -79,13 +80,7 @@ function VideoIcon() {
       stroke="currentColor"
       strokeWidth="1.8"
     >
-      <rect
-        x="3"
-        y="5"
-        width="14"
-        height="14"
-        rx="2"
-      />
+      <rect x="3" y="5" width="14" height="14" rx="2" />
       <path d="m17 9 4-2v10l-4-2" />
     </svg>
   );
@@ -136,24 +131,54 @@ function ChevronRight() {
 function StarRating() {
   return (
     <div className="flex items-center gap-0.5 text-[#3d9f4b]">
-      {Array.from({ length: 5 }).map(
-        (_, index) => (
-          <span
-            key={index}
-            className="text-[10px]"
-          >
-            ★
-          </span>
-        )
-      )}
+      {Array.from({ length: 5 }).map((_, index) => (
+        <span key={index} className="text-[10px]">
+          ★
+        </span>
+      ))}
     </div>
+  );
+}
+
+function formatSlotTime(time: string) {
+  const [hoursString, minutes] = time.split(":");
+
+  const hours = Number(hoursString);
+
+  const suffix = hours >= 12 ? "PM" : "AM";
+
+  const displayHour = hours % 12 || 12;
+
+  return `${displayHour}:${minutes} ${suffix}`;
+}
+
+function getDateKey(year: number, month: number, day: number) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(
+    day
+  ).padStart(2, "0")}`;
+}
+
+function getTodayKey() {
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function getInitialCalendarDate() {
+  const now = new Date();
+
+  return new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1
   );
 }
 
 export function AppointmentBookingClient({
   meetingTypes,
   doctors,
-  slots,
   form,
   connectionMethods,
   isAuthenticated,
@@ -165,68 +190,158 @@ export function AppointmentBookingClient({
     setConnectionMethod,
   } = useAppointmentBooking();
 
-  const [selectedDoctorId, setSelectedDoctorId] =
-    useState(doctors[0]?.id || "");
-
-  const selectedDoctor = doctors.find(
-    (doctor) =>
-      doctor.id === selectedDoctorId
+  const [selectedDoctorId, setSelectedDoctorId] = useState(
+    doctors[0]?.id || ""
   );
 
-  const [selectedDate, setSelectedDate] =
-    useState(10);
+  const selectedDoctor = doctors.find(
+    (doctor) => doctor.id === selectedDoctorId
+  );
 
-  const [selectedSlot, setSelectedSlot] =
-    useState(slots[0] || "");
+  const todayKey = getTodayKey();
+
+  const [selectedDate, setSelectedDate] = useState(todayKey);
+
+  const [calendarDate, setCalendarDate] = useState(
+    getInitialCalendarDate()
+  );
+
+  const [slots, setSlots] = useState<AvailableSlot[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState("");
+
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState("");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [concerns, setConcerns] = useState("");
 
-  const [submitted, setSubmitted] =
-    useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [loading, setLoading] =
-    useState(false);
+  const calendarYear = calendarDate.getFullYear();
+  const calendarMonth = calendarDate.getMonth();
 
-  const [calendarDate, setCalendarDate] =
-    useState(() => new Date());
+  /*
+   * Load real slots whenever:
+   *
+   * doctor changes
+   * OR
+   * date changes
+   */
+  useEffect(() => {
+    if (!selectedDoctorId || !selectedDate) {
+      setSlots([]);
+      setSelectedSlotId("");
+      return;
+    }
 
-  const calendarYear =
-    calendarDate.getFullYear();
+    let cancelled = false;
 
-  const calendarMonth =
-    calendarDate.getMonth();
+    async function loadAvailableSlots() {
+      try {
+        setSlotsLoading(true);
+        setSlotsError("");
+        setSelectedSlotId("");
+        setSlots([]);
+
+        const response = await fetch(
+          `/api/appointments/available-slots?doctorId=${encodeURIComponent(
+            selectedDoctorId
+          )}&date=${encodeURIComponent(selectedDate)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || "Failed to load available slots."
+          );
+        }
+
+        if (cancelled) return;
+
+        const availableSlots: AvailableSlot[] = (
+          data.slots || []
+        ).filter(
+          (slot: AvailableSlot) =>
+            slot.status === "AVAILABLE"
+        );
+
+        setSlots(availableSlots);
+
+        if (availableSlots.length > 0) {
+          setSelectedSlotId(availableSlots[0].id);
+        }
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error(
+          "Available slots error:",
+          error
+        );
+
+        setSlots([]);
+        setSelectedSlotId("");
+
+        setSlotsError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load available slots."
+        );
+      } finally {
+        if (!cancelled) {
+          setSlotsLoading(false);
+        }
+      }
+    }
+
+    loadAvailableSlots();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDoctorId, selectedDate]);
 
   const days = useMemo(() => {
     const year = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
 
     const firstDay = new Date(
-      Date.UTC(year, month, 1)
-    ).getUTCDay();
+      year,
+      month,
+      1
+    ).getDay();
 
     const totalDays = new Date(
-      Date.UTC(year, month + 1, 0)
-    ).getUTCDate();
+      year,
+      month + 1,
+      0
+    ).getDate();
 
     const previousMonthDays = new Date(
-      Date.UTC(year, month, 0)
-    ).getUTCDate();
+      year,
+      month,
+      0
+    ).getDate();
 
     const result: {
       day: number;
       currentMonth: boolean;
+      dateKey: string;
     }[] = [];
 
-    for (
-      let i = firstDay - 1;
-      i >= 0;
-      i--
-    ) {
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const day = previousMonthDays - i;
+
       result.push({
-        day: previousMonthDays - i,
+        day,
         currentMonth: false,
+        dateKey: "",
       });
     }
 
@@ -238,6 +353,11 @@ export function AppointmentBookingClient({
       result.push({
         day,
         currentMonth: true,
+        dateKey: getDateKey(
+          year,
+          month,
+          day
+        ),
       });
     }
 
@@ -247,6 +367,7 @@ export function AppointmentBookingClient({
       result.push({
         day: nextMonthDay,
         currentMonth: false,
+        dateKey: "",
       });
 
       nextMonthDay++;
@@ -255,42 +376,60 @@ export function AppointmentBookingClient({
     return result;
   }, [calendarDate]);
 
-  function createAppointmentDate(
+  function selectDate(
     year: number,
     month: number,
-    day: number,
-    time: string
+    day: number
   ) {
-    const [timePart, modifier] =
-      time.split(" ");
-
-    let [hours, minutes] = timePart
-      .split(":")
-      .map(Number);
-
-    if (
-      modifier === "PM" &&
-      hours !== 12
-    ) {
-      hours += 12;
-    }
-
-    if (
-      modifier === "AM" &&
-      hours === 12
-    ) {
-      hours = 0;
-    }
-
-    return new Date(
+    const dateKey = getDateKey(
       year,
       month,
-      day,
-      hours,
-      minutes,
-      0,
-      0
-    ).toISOString();
+      day
+    );
+
+    /*
+     * Do not allow booking dates in the past.
+     */
+    if (dateKey < todayKey) {
+      return;
+    }
+
+    setSelectedDate(dateKey);
+    setSubmitted(false);
+  }
+
+  function goPreviousMonth() {
+    const previousMonth = new Date(
+      calendarYear,
+      calendarMonth - 1,
+      1
+    );
+
+    /*
+     * Don't allow navigating before the
+     * current month.
+     */
+    const currentMonth = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1
+    );
+
+    if (previousMonth < currentMonth) {
+      return;
+    }
+
+    setCalendarDate(previousMonth);
+  }
+
+  function goNextMonth() {
+    setCalendarDate(
+      new Date(
+        calendarYear,
+        calendarMonth + 1,
+        1
+      )
+    );
   }
 
   async function handleSubmit(
@@ -312,7 +451,12 @@ export function AppointmentBookingClient({
       return;
     }
 
-    if (!selectedSlot) {
+    if (!selectedDate) {
+      alert("Please select an appointment date.");
+      return;
+    }
+
+    if (!selectedSlotId) {
       alert(
         "Please select an available time slot."
       );
@@ -329,17 +473,35 @@ export function AppointmentBookingClient({
       return;
     }
 
+    if (!name.trim()) {
+      alert("Please enter your name.");
+      return;
+    }
+
+    if (!email.trim()) {
+      alert("Please enter your email.");
+      return;
+    }
+
+    if (!concerns.trim()) {
+      alert(
+        "Please briefly describe your concerns."
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const appointmentDate =
-        createAppointmentDate(
-          calendarYear,
-          calendarMonth,
-          selectedDate,
-          selectedSlot
-        );
-
+      /*
+       * IMPORTANT:
+       *
+       * We send slotId instead of trusting the
+       * client for appointmentDate/time.
+       *
+       * Your backend should derive the actual
+       * date/time from AvailableSlot.
+       */
       const response = await fetch(
         "/api/appointments",
         {
@@ -351,17 +513,19 @@ export function AppointmentBookingClient({
           body: JSON.stringify({
             name: name.trim(),
             email: email.trim(),
+
             meetingType,
+
             connectionMethod:
               meetingType === "clinic"
                 ? null
                 : connectionMethod,
-            appointmentDate,
-            appointmentTime:
-              selectedSlot,
+
             concerns: concerns.trim(),
-            doctorId:
-              selectedDoctorId,
+
+            doctorId: selectedDoctorId,
+
+            slotId: selectedSlotId,
           }),
         }
       );
@@ -384,7 +548,8 @@ export function AppointmentBookingClient({
       if (!response.ok) {
         throw new Error(
           data.message ||
-            "Failed to book appointment"
+            data.error ||
+            "Failed to book appointment."
         );
       }
 
@@ -393,6 +558,45 @@ export function AppointmentBookingClient({
       setName("");
       setEmail("");
       setConcerns("");
+
+      /*
+       * Reload slots after successful booking.
+       *
+       * This is important because the selected
+       * slot has now become BOOKED.
+       */
+      setSelectedSlotId("");
+
+      const refreshResponse =
+        await fetch(
+          `/api/appointments/available-slots?doctorId=${encodeURIComponent(
+            selectedDoctorId
+          )}&date=${encodeURIComponent(
+            selectedDate
+          )}`,
+          {
+            cache: "no-store",
+          }
+        );
+
+      if (refreshResponse.ok) {
+        const refreshData =
+          await refreshResponse.json();
+
+        const availableSlots: AvailableSlot[] =
+          (refreshData.slots || []).filter(
+            (slot: AvailableSlot) =>
+              slot.status === "AVAILABLE"
+          );
+
+        setSlots(availableSlots);
+
+        if (availableSlots.length > 0) {
+          setSelectedSlotId(
+            availableSlots[0].id
+          );
+        }
+      }
 
       console.log(
         "Appointment created:",
@@ -417,6 +621,7 @@ export function AppointmentBookingClient({
   return (
     <div>
       {/* MEETING TYPES */}
+
       <div className="grid gap-4 md:grid-cols-2">
         {meetingTypes
           .filter(
@@ -486,6 +691,7 @@ export function AppointmentBookingClient({
       </div>
 
       {/* ONLINE CONNECTION METHODS */}
+
       <div className="mt-6">
         <ConnectionMethods
           methods={connectionMethods}
@@ -493,6 +699,7 @@ export function AppointmentBookingClient({
       </div>
 
       {/* CALENDAR + SLOTS */}
+
       <div className="mt-6">
         <h3 className="mb-4 text-xl font-bold text-[#10105c]">
           Select your preferred time
@@ -500,6 +707,7 @@ export function AppointmentBookingClient({
 
         <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
           {/* Calendar */}
+
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h4 className="text-sm font-bold text-gray-700">
@@ -515,19 +723,7 @@ export function AppointmentBookingClient({
               <div className="flex gap-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setCalendarDate(
-                      (current) =>
-                        new Date(
-                          current.getFullYear(),
-                          current.getMonth() - 1,
-                          1
-                        )
-                    );
-
-                    setSelectedDate(1);
-                    setSubmitted(false);
-                  }}
+                  onClick={goPreviousMonth}
                   className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400"
                 >
                   <ChevronLeft />
@@ -535,19 +731,7 @@ export function AppointmentBookingClient({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setCalendarDate(
-                      (current) =>
-                        new Date(
-                          current.getFullYear(),
-                          current.getMonth() + 1,
-                          1
-                        )
-                    );
-
-                    setSelectedDate(1);
-                    setSubmitted(false);
-                  }}
+                  onClick={goNextMonth}
                   className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400"
                 >
                   <ChevronRight />
@@ -574,32 +758,38 @@ export function AppointmentBookingClient({
               ))}
 
               {days.map((item, index) => {
+                const disabled =
+                  !item.currentMonth ||
+                  item.dateKey < todayKey;
+
                 const selected =
                   item.currentMonth &&
-                  item.day === selectedDate;
+                  item.dateKey ===
+                    selectedDate;
 
                 return (
                   <button
                     key={`${item.day}-${index}`}
                     type="button"
-                    disabled={!item.currentMonth}
+                    disabled={disabled}
                     onClick={() => {
                       if (
-                        item.currentMonth
+                        item.currentMonth &&
+                        !disabled
                       ) {
-                        setSelectedDate(
+                        selectDate(
+                          calendarYear,
+                          calendarMonth,
                           item.day
                         );
-
-                        setSubmitted(false);
                       }
                     }}
                     className={`flex h-9 items-center justify-center rounded-lg text-xs transition ${
                       selected
                         ? "bg-[#151568] font-bold text-white"
-                        : item.currentMonth
-                          ? "text-gray-700 hover:bg-gray-100"
-                          : "text-gray-300"
+                        : disabled
+                          ? "cursor-not-allowed text-gray-300"
+                          : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
                     {item.day}
@@ -609,29 +799,43 @@ export function AppointmentBookingClient({
             </div>
           </div>
 
-          {/* Available Slots */}
+          {/* REAL AVAILABLE SLOTS */}
+
           <div className="rounded-[20px] bg-[#3da449] p-4">
-            <h4 className="mb-3 text-center text-sm font-bold text-white">
+            <h4 className="mb-1 text-center text-sm font-bold text-white">
               Available Slots
             </h4>
 
-            {slots.length === 0 ? (
-              <p className="py-4 text-center text-xs text-white/80">
-                No slots available.
-              </p>
+            <p className="mb-3 text-center text-[10px] text-white/70">
+              {selectedDate}
+            </p>
+
+            {slotsLoading ? (
+              <div className="py-6 text-center text-xs text-white">
+                Loading available times...
+              </div>
+            ) : slotsError ? (
+              <div className="rounded-lg bg-white/10 p-4 text-center text-xs text-white">
+                {slotsError}
+              </div>
+            ) : slots.length === 0 ? (
+              <div className="py-6 text-center text-xs text-white/80">
+                No available slots for this date.
+              </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {slots.map((slot) => {
                   const selected =
-                    selectedSlot === slot;
+                    selectedSlotId ===
+                    slot.id;
 
                   return (
                     <button
-                      key={slot}
+                      key={slot.id}
                       type="button"
                       onClick={() => {
-                        setSelectedSlot(
-                          slot
+                        setSelectedSlotId(
+                          slot.id
                         );
 
                         setSubmitted(false);
@@ -642,7 +846,13 @@ export function AppointmentBookingClient({
                           : "border-white/70 text-white hover:bg-white/10"
                       }`}
                     >
-                      {slot}
+                      {formatSlotTime(
+                        slot.startTime
+                      )}{" "}
+                      -{" "}
+                      {formatSlotTime(
+                        slot.endTime
+                      )}
                     </button>
                   );
                 })}
@@ -653,6 +863,7 @@ export function AppointmentBookingClient({
       </div>
 
       {/* DOCTORS */}
+
       <div className="mt-6">
         <h3 className="mb-4 text-xl font-bold text-[#10105c]">
           Choose your specialist
@@ -666,6 +877,7 @@ export function AppointmentBookingClient({
         ) : (
           <>
             {/* Doctor Dropdown */}
+
             <div className="relative mb-3">
               <select
                 value={selectedDoctorId}
@@ -695,17 +907,14 @@ export function AppointmentBookingClient({
             </div>
 
             {/* Selected Doctor */}
+
             {selectedDoctor && (
               <div className="flex items-center gap-4 rounded-[22px] bg-[#f8f8f7] p-3">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full">
                   {selectedDoctor.image ? (
                     <Image
-                      src={
-                        selectedDoctor.image
-                      }
-                      alt={
-                        selectedDoctor.name
-                      }
+                      src={selectedDoctor.image}
+                      alt={selectedDoctor.name}
                       fill
                       className="object-cover"
                     />
@@ -754,6 +963,7 @@ export function AppointmentBookingClient({
       </div>
 
       {/* PATIENT FORM */}
+
       <form
         onSubmit={handleSubmit}
         className="mt-7"
@@ -764,6 +974,7 @@ export function AppointmentBookingClient({
 
         <div className="grid gap-4 md:grid-cols-2">
           {/* Full Name */}
+
           <div>
             <label className="mb-2 block text-[9px] font-semibold text-gray-600">
               FULL NAME
@@ -777,14 +988,13 @@ export function AppointmentBookingClient({
                 setName(e.target.value);
                 setSubmitted(false);
               }}
-              placeholder={
-                form.namePlaceholder
-              }
+              placeholder={form.namePlaceholder}
               className="h-11 w-full rounded-full border border-gray-200 bg-[#fafafa] px-4 text-xs text-gray-700 outline-none transition focus:border-[#3da449]"
             />
           </div>
 
           {/* Email */}
+
           <div>
             <label className="mb-2 block text-[9px] font-semibold text-gray-600">
               EMAIL ADDRESS
@@ -807,6 +1017,7 @@ export function AppointmentBookingClient({
         </div>
 
         {/* Concerns */}
+
         <div className="mt-4">
           <label className="mb-2 block text-[9px] font-semibold text-gray-600">
             BRIEFLY DESCRIBE YOUR CONCERNS
@@ -816,10 +1027,7 @@ export function AppointmentBookingClient({
             required
             value={concerns}
             onChange={(e) => {
-              setConcerns(
-                e.target.value
-              );
-
+              setConcerns(e.target.value);
               setSubmitted(false);
             }}
             placeholder={
@@ -830,16 +1038,18 @@ export function AppointmentBookingClient({
           />
         </div>
 
-        {/* Success Message */}
+        {/* Success */}
+
         {submitted && (
           <div className="mt-4 rounded-xl bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-            Your appointment request has
-            been received. We will contact you
+            Your appointment request has been
+            received. We will contact you
             shortly.
           </div>
         )}
 
         {/* Buttons */}
+
         <div className="mt-5 flex flex-col justify-end gap-3 sm:flex-row">
           <button
             type="button"
@@ -859,9 +1069,10 @@ export function AppointmentBookingClient({
             type="submit"
             disabled={
               loading ||
+              slotsLoading ||
               doctors.length === 0 ||
               !selectedDoctorId ||
-              !selectedSlot
+              !selectedSlotId
             }
             className="h-11 rounded-xl bg-[#3da449] px-8 text-sm font-bold text-white transition hover:bg-[#328d3e] disabled:cursor-not-allowed disabled:opacity-50"
           >
