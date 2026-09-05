@@ -15,12 +15,13 @@ export default function AdminDashboardPage() {
   } = useAuth();
 
   const [stats, setStats] = useState({
-    appointments: 0,
-    consultations: 0,
-    doctors: 0,
-    services: 0,
-    blogs: 0,
-  });
+  appointments: 0,
+  consultations: 0,
+  doctors: 0,
+  services: 0,
+  blogs: 0,
+  pharmacies: 0,
+});
 
   useEffect(() => {
     if (authLoading) return;
@@ -57,13 +58,14 @@ export default function AdminDashboardPage() {
 
       const data = await response.json();
 
-      setStats({
-        appointments: data.appointments ?? 0,
-        consultations: data.consultations ?? 0,
-        doctors: data.doctors ?? 0,
-        services: data.services ?? 0,
-        blogs: data.blogs ?? 0,
-      });
+     setStats({
+  appointments: data.appointments ?? 0,
+  consultations: data.consultations ?? 0,
+  doctors: data.doctors ?? 0,
+  services: data.services ?? 0,
+  blogs: data.blogs ?? 0,
+  pharmacies: data.pharmacies ?? 0,
+});
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }
@@ -103,7 +105,7 @@ export default function AdminDashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
 
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="text-sm font-medium text-gray-500">
@@ -156,8 +158,17 @@ export default function AdminDashboardPage() {
           </div>
 
         </div>
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+  <div className="text-sm font-medium text-gray-500">
+    Pharmacies
+  </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+  <div className="text-3xl font-bold text-gray-900 mt-2">
+    {stats.pharmacies}
+  </div>
+</div>
+
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
 
           <Link
             href="/admin/appointments"
@@ -237,6 +248,18 @@ export default function AdminDashboardPage() {
   <p className="mt-1 text-sm text-gray-500">
     Manage doctor working hours and appointment slots.
   </p>
+</Link>
+<Link
+  href="/admin/pharmacies"
+  className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow text-center"
+>
+  <div className="text-lg font-semibold text-gray-900">
+    Pharmacies
+  </div>
+
+  <div className="text-sm text-gray-500 mt-1">
+    Manage trusted pharmacies
+  </div>
 </Link>
 
         </div>

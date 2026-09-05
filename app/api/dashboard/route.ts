@@ -11,17 +11,24 @@ export async function GET() {
       consultations,
       doctors,
       services,
-      blogs
+      blogs,
+      pharmacies,
     ] = await Promise.all([
       prisma.appointment.count(),
+
       prisma.consultationInquiry.count(),
+
       prisma.doctor.count(),
+
       prisma.treatment.count(),
+
       prisma.blog.count({
-  where: {
-    status: "PUBLISHED",
-  },
-}),
+        where: {
+          status: "PUBLISHED",
+        },
+      }),
+
+      prisma.pharmacy.count(),
     ]);
 
     return NextResponse.json({
@@ -30,17 +37,25 @@ export async function GET() {
       doctors,
       services,
       blogs,
+      pharmacies,
     });
   } catch (error) {
-    console.error("Dashboard error:", error);
+    console.error(
+      "Dashboard error:",
+      error
+    );
 
     if (
       error instanceof Error &&
       error.message === "Unauthorized"
     ) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        {
+          error: "Unauthorized",
+        },
+        {
+          status: 401,
+        }
       );
     }
 
@@ -49,14 +64,22 @@ export async function GET() {
       error.message === "Forbidden"
     ) {
       return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
+        {
+          error: "Forbidden",
+        },
+        {
+          status: 403,
+        }
       );
     }
 
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      {
+        error: "Internal server error",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }

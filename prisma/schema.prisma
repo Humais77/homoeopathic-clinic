@@ -8,23 +8,23 @@ datasource db {
 }
 
 model User {
-  id                          String         @id @default(cuid())
-  email                       String         @unique
-  name                        String
-  passwordHash                String
-  phone                       String?
+  id            String  @id @default(cuid())
+  email         String  @unique
+  name          String
+  passwordHash  String
+  phone         String?
   whatsappOptIn Boolean @default(false)
-  
-  role                        UserRole       @default(USER)
-  emailVerified               Boolean        @default(false)
-  verifyToken                 String?        @unique
+
+  role                        UserRole          @default(USER)
+  emailVerified               Boolean           @default(false)
+  verifyToken                 String?           @unique
   verifyTokenExpiresAt        DateTime?
-  createdAt                   DateTime       @default(now())
-  updatedAt                   DateTime       @updatedAt
-  passwordResetToken          String?        @unique
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @updatedAt
+  passwordResetToken          String?           @unique
   passwordResetTokenExpiresAt DateTime?
-  sessionVersion              Int            @default(0)
-  status                      UserStatus     @default(ACTIVE)
+  sessionVersion              Int               @default(0)
+  status                      UserStatus        @default(ACTIVE)
   appointments                Appointment[]
   auditLogs                   AuditLog[]
   blogs                       Blog[]
@@ -32,7 +32,7 @@ model User {
   mediaAssets                 MediaAsset[]
   notifications               Notification[]
   treatments                  Treatment[]
-  whatsappMessages WhatsAppMessage[]
+  whatsappMessages            WhatsAppMessage[]
 
   @@index([status])
   @@index([role])
@@ -115,11 +115,13 @@ model Pharmacy {
   address       String?
   phone         String?
   website       String?
+  mapsUrl       String?
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([isActive])
+  @@index([createdAt])
   @@map("pharmacies")
 }
 
@@ -171,7 +173,8 @@ model Appointment {
   user               User?             @relation(fields: [userId], references: [id])
   meeting            Meeting?
   notifications      Notification[]
-whatsappMessages WhatsAppMessage[]
+  whatsappMessages   WhatsAppMessage[]
+
   @@index([userId])
   @@index([doctorId])
   @@index([appointmentDate])
@@ -343,31 +346,31 @@ model ClinicScheduleBlock {
 }
 
 model WhatsAppMessage {
-  id            String                 @id @default(cuid())
+  id String @id @default(cuid())
 
   userId        String?
   appointmentId String?
 
-  phone         String
-  type          WhatsAppMessageType
-  status        WhatsAppMessageStatus   @default(PENDING)
+  phone  String
+  type   WhatsAppMessageType
+  status WhatsAppMessageStatus @default(PENDING)
 
-  templateName  String?
-  message       String?
+  templateName String?
+  message      String?
 
-  providerId    String?
+  providerId String?
 
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  readAt        DateTime?
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
 
-  errorMessage  String?
+  errorMessage String?
 
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user          User?                  @relation(fields: [userId], references: [id])
-  appointment   Appointment?           @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User?        @relation(fields: [userId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([appointmentId])
@@ -375,9 +378,9 @@ model WhatsAppMessage {
   @@index([status])
   @@index([type])
   @@index([createdAt])
-
   @@map("whatsapp_messages")
 }
+
 enum UserRole {
   USER
   ADMIN
