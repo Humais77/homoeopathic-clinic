@@ -8,6 +8,9 @@ import { getCurrentUser } from "@/src/lib/auth";
 import { createZoomMeeting } from "@/src/lib/meetings/zoom";
 import { createGoogleMeet } from "@/src/lib/meetings/googleMeet";
 import { roomService } from "@/src/lib/meeting";
+import {
+  sendAppointmentWhatsAppNotification,
+} from "@/src/lib/whatsapp/appointmentNotifications";
 
 type ConnectionMethod =
   | "zoom"
@@ -465,6 +468,19 @@ export async function POST(request: Request) {
           };
         }
       );
+      try {
+  await sendAppointmentWhatsAppNotification({
+    appointmentId:
+      result.appointment.id,
+
+    type: "APPOINTMENT_CREATED",
+  });
+} catch (error) {
+  console.error(
+    "WhatsApp notification failed:",
+    error
+  );
+}
 
     return NextResponse.json(
       {
