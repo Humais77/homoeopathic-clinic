@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/src/context/AuthContext";
+import RecentAuditLogs from "@/src/components/admin/RecentAuditLogs";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -106,67 +107,79 @@ export default function AdminDashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+  {/* Appointments */}
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="text-sm font-medium text-gray-500">
-              Appointments
-            </div>
+  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div className="text-sm font-medium text-gray-500">
+      Appointments
+    </div>
 
-            <div className="text-3xl font-bold text-gray-900 mt-2">
-              {stats.appointments}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="text-sm font-medium text-gray-500">
-              Consultations
-            </div>
-
-            <div className="text-3xl font-bold text-gray-900 mt-2">
-              {stats.consultations}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="text-sm font-medium text-gray-500">
-              Doctors
-            </div>
-
-            <div className="text-3xl font-bold text-gray-900 mt-2">
-              {stats.doctors}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="text-sm font-medium text-gray-500">
-  Treatments
-</div>
-
-            <div className="text-3xl font-bold text-gray-900 mt-2">
-  {stats.services}
-</div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="text-sm font-medium text-gray-500">
-              Blogs
-            </div>
-
-            <div className="text-3xl font-bold text-gray-900 mt-2">
-              {stats.blogs}
-            </div>
-          </div>
-
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-  <div className="text-sm font-medium text-gray-500">
-    Pharmacies
+    <div className="text-3xl font-bold text-gray-900 mt-2">
+      {stats.appointments}
+    </div>
   </div>
 
-  <div className="text-3xl font-bold text-gray-900 mt-2">
-    {stats.pharmacies}
+  {/* Consultations */}
+
+  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div className="text-sm font-medium text-gray-500">
+      Consultations
+    </div>
+
+    <div className="text-3xl font-bold text-gray-900 mt-2">
+      {stats.consultations}
+    </div>
+  </div>
+
+  {/* Doctors */}
+
+  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div className="text-sm font-medium text-gray-500">
+      Doctors
+    </div>
+
+    <div className="text-3xl font-bold text-gray-900 mt-2">
+      {stats.doctors}
+    </div>
+  </div>
+
+  {/* Treatments */}
+
+  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div className="text-sm font-medium text-gray-500">
+      Treatments
+    </div>
+
+    <div className="text-3xl font-bold text-gray-900 mt-2">
+      {stats.services}
+    </div>
+  </div>
+
+  {/* Blogs */}
+
+  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div className="text-sm font-medium text-gray-500">
+      Blogs
+    </div>
+
+    <div className="text-3xl font-bold text-gray-900 mt-2">
+      {stats.blogs}
+    </div>
+  </div>
+
+  {/* Pharmacies */}
+
+  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div className="text-sm font-medium text-gray-500">
+      Pharmacies
+    </div>
+
+    <div className="text-3xl font-bold text-gray-900 mt-2">
+      {stats.pharmacies}
+    </div>
   </div>
 </div>
+<RecentAuditLogs />
 
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
 
