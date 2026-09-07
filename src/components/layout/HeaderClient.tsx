@@ -627,7 +627,7 @@ export function HeaderClient() {
 
               {/* Mobile Consultation */}
               <Link
-                href="/consultation"
+                href="/online-consultation"
                 onClick={closeMenu}
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
               >

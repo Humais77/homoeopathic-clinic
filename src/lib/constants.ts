@@ -76,7 +76,7 @@ export const ABOUT_HOME = {
     label: "Years of Clinical Excellence in The Natural Medicine",
   },
   ctaText: "Online Consultation",
-  ctaLink: "/consultation",
+  ctaLink: "/online-consultation",
 };
 export const TESTIMONIALS = {
   title: "What Our Client Says",
@@ -201,7 +201,7 @@ export const ABOUT_TRUSTED_CARE = {
     { label: "Satisfaction Rate", value: "95%" },
   ],
   ctaText: "Online Consultation",
-  ctaLink: "/consultation",
+  ctaLink: "/online-consultation",
 };
 
 export const ABOUT_MISSION_VISION = {
