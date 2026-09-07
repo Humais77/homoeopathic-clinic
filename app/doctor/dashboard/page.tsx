@@ -1,28 +1,51 @@
 "use client";
 
+import { JoinMeetingButton } from "@/src/components/meeting/JoinMeetingButton";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
+type Meeting = {
+  id: string;
+  type: "CLINIC" | "VIDEO" | "VOICE";
+  provider: "NONE" | "ZOOM" | "GOOGLE_MEET" | "LIVEKIT";
+  status:
+    | "CREATED"
+    | "WAITING"
+    | "LIVE"
+    | "ENDED"
+    | "CANCELLED";
+  roomName: string | null;
+  meetingUrl: string | null;
+  hostUrl: string | null;
+  externalMeetingId: string | null;
+};
 
 type Appointment = {
   id: string;
   name: string;
   email: string;
   concerns: string;
+
   meetingType: "CLINIC" | "VIDEO" | "VOICE";
+
   appointmentDate: string;
   appointmentTime: string;
+
   status:
     | "PENDING"
     | "CONFIRMED"
     | "CANCELLED"
     | "COMPLETED"
     | "NO_SHOW";
+
   user?: {
     id: string;
     name: string;
     email: string;
     phone: string | null;
   } | null;
+
+  meeting: Meeting | null;
 };
 
 type Doctor = {
@@ -1022,40 +1045,6 @@ const [treatmentsLoading, setTreatmentsLoading] = useState(true);
                         className="border-b border-gray-50"
                       >
 
-                        <td className="px-6 py-4">
-
-                          <div>
-
-                            <p className="font-medium text-gray-900">
-                              {
-                                appointment.user
-                                  ?.name ||
-                                appointment.name
-                              }
-                            </p>
-
-                            <p className="text-xs text-gray-500">
-                              {
-                                appointment.user
-                                  ?.email ||
-                                appointment.email
-                              }
-                            </p>
-
-                            {appointment.user
-                              ?.phone && (
-                              <p className="text-xs text-gray-500">
-                                {
-                                  appointment
-                                    .user.phone
-                                }
-                              </p>
-                            )}
-
-                          </div>
-
-                        </td>
-
                         <td className="px-6 py-4 text-sm text-gray-700">
                           {new Date(
                             appointment.appointmentDate
@@ -1067,6 +1056,53 @@ const [treatmentsLoading, setTreatmentsLoading] = useState(true);
                             appointment.appointmentTime
                           }
                         </td>
+                         <td className="px-6 py-4">
+  <div className="flex flex-col gap-2">
+
+    {appointment.status === "CONFIRMED" &&
+  appointment.meeting &&
+  appointment.meeting.provider !== "NONE" && (
+    <JoinMeetingButton
+      appointmentId={appointment.id}
+      appointmentDate={appointment.appointmentDate}
+       appointmentTime={appointment.appointmentTime}
+    />
+  )}
+
+    <select
+      value={appointment.status}
+      disabled={updatingId === appointment.id}
+      onChange={(e) =>
+        updateAppointmentStatus(
+          appointment.id,
+          e.target.value as Appointment["status"]
+        )
+      }
+      className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
+    >
+      <option value="PENDING">
+        Pending
+      </option>
+
+      <option value="CONFIRMED">
+        Confirmed
+      </option>
+
+      <option value="CANCELLED">
+        Cancelled
+      </option>
+
+      <option value="COMPLETED">
+        Completed
+      </option>
+
+      <option value="NO_SHOW">
+        No Show
+      </option>
+    </select>
+
+  </div>
+</td>
 
                         <td className="px-6 py-4 text-sm text-gray-700">
                           {

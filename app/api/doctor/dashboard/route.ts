@@ -13,25 +13,26 @@ export async function GET() {
         },
         include: {
           appointments: {
-            orderBy: [
-              {
-                appointmentDate: 'asc',
-              },
-              {
-                createdAt: 'desc',
-              },
-            ],
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  phone: true,
-                },
-              },
-            },
-          },
+  orderBy: [
+    {
+      appointmentDate: "asc",
+    },
+    {
+      createdAt: "desc",
+    },
+  ],
+  include: {
+    user: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+      },
+    },
+    meeting: true,
+  },
+},
 
           consultations: {
             orderBy: {

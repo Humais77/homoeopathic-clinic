@@ -1,91 +1,92 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Props = {
   appointmentId: string;
   appointmentDate: string;
+  appointmentTime: string;
 };
+
+function getAppointmentDateTime(
+  appointmentDate: string,
+  appointmentTime: string
+) {
+  const date = new Date(appointmentDate);
+
+  // appointmentDate is stored as UTC midnight.
+  // appointmentTime is the actual local appointment time.
+  //
+  // Build the appointment datetime in the user's local timezone.
+  const [hours, minutes] = appointmentTime.split(":").map(Number);
+
+  date.setHours(hours, minutes, 0, 0);
+
+  return date;
+}
 
 export function JoinMeetingButton({
   appointmentId,
   appointmentDate,
+  appointmentTime,
 }: Props) {
-  const [available, setAvailable] =
-    useState(false);
+  const appointmentDateTime = useMemo(
+    () => getAppointmentDateTime(appointmentDate, appointmentTime),
+    [appointmentDate, appointmentTime]
+  );
 
-  const [checking, setChecking] =
-    useState(true);
+  const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    function checkAvailability() {
-      const start =
-        new Date(
-          appointmentDate
-        ).getTime();
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
 
-      const now = Date.now();
+    return () => clearInterval(timer);
+  }, []);
 
-      const earliest =
-        start - 10 * 60 * 1000;
+  const diffMs = appointmentDateTime.getTime() - now.getTime();
 
-      const latest =
-        start + 2 * 60 * 60 * 1000;
+  const TEN_MINUTES = 10 * 60 * 1000;
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
 
-      setAvailable(
-        now >= earliest &&
-          now <= latest
-      );
+  const canJoin =
+    diffMs <= TEN_MINUTES && diffMs >= -TWO_HOURS;
 
-      setChecking(false);
-    }
+  const minutesUntil = Math.ceil(diffMs / (60 * 1000));
 
-    checkAvailability();
-
-    const interval =
-      window.setInterval(
-        checkAvailability,
-        1000
-      );
-
-    return () =>
-      window.clearInterval(
-        interval
-      );
-  }, [appointmentDate]);
-
-  function join() {
+  const handleJoin = () => {
     window.open(
       `/meeting/${appointmentId}`,
       "_blank",
       "noopener,noreferrer"
     );
-  }
+  };
 
-  if (checking) {
+  if (canJoin) {
     return (
       <button
-        disabled
-        className="rounded-xl bg-gray-200 px-6 py-3 text-sm font-semibold text-gray-500"
+        type="button"
+        onClick={handleJoin}
+        className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
       >
-        Checking...
+        <span>🎥</span>
+        Join Meeting
       </button>
     );
   }
 
+  if (diffMs > TEN_MINUTES) {
+    return (
+      <span className="text-xs text-gray-500">
+        Available {Math.max(1, minutesUntil - 10)} min before
+      </span>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      disabled={!available}
-      onClick={join}
-      className="rounded-xl bg-[#3da449] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#328d3e] disabled:cursor-not-allowed disabled:bg-gray-300"
-    >
-      {available
-        ? "Join Meeting"
-        : "Available 10 min before"}
-    </button>
+    <span className="text-xs text-gray-500">
+      Meeting window ended
+    </span>
   );
 }

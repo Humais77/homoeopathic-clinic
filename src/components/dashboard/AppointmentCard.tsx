@@ -221,6 +221,7 @@ export function AppointmentCard({
                 appointmentDate={
                   appointment.appointmentDate
                 }
+                 appointmentTime={appointment.appointmentTime}
               />
             )}
 

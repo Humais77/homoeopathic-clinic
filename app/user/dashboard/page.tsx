@@ -5,21 +5,46 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import { AppointmentCard } from "@/src/components/dashboard/AppointmentCard";
 
+type Meeting = {
+  id: string;
+  type: "CLINIC" | "VIDEO" | "VOICE";
+  provider: "NONE" | "ZOOM" | "GOOGLE_MEET" | "LIVEKIT";
+  status:
+    | "CREATED"
+    | "WAITING"
+    | "LIVE"
+    | "ENDED"
+    | "CANCELLED";
+  roomName: string | null;
+  meetingUrl: string | null;
+  hostUrl: string | null;
+  externalMeetingId: string | null;
+};
+
 type Appointment = {
   id: string;
   name: string;
+  email?: string;
   appointmentDate: string;
   appointmentTime: string;
-  meetingType: string;
-  status: string;
+  meetingType: "CLINIC" | "VIDEO" | "VOICE";
+  status:
+    | "PENDING"
+    | "CONFIRMED"
+    | "CANCELLED"
+    | "COMPLETED"
+    | "NO_SHOW";
+
   doctor: {
+    id?: string;
     name: string;
     qualification: string;
     specialization?: string | null;
     image?: string | null;
   };
-};
 
+  meeting: Meeting | null;
+};
 export default function UserDashboardPage() {
   const router = useRouter();
 
