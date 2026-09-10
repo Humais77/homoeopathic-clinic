@@ -1,16 +1,15 @@
-// app/api/appointments/route.ts
-
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/src/lib/prisma";
 import { getCurrentUser } from "@/src/lib/auth";
 
-import { createZoomMeeting } from "@/src/lib/meetings/zoom";
-import { createGoogleMeet } from "@/src/lib/meetings/googleMeet";
-import { roomService } from "@/src/lib/meeting";
 import {
   sendAppointmentWhatsAppNotification,
 } from "@/src/lib/whatsapp/appointmentNotifications";
+
+import {
+  createSafepayPayment,
+} from "@/src/lib/payments/safepay";
 
 type ConnectionMethod =
   | "zoom"
@@ -25,24 +24,37 @@ type FrontendMeetingType =
 
 export async function POST(request: Request) {
   try {
+    // --------------------------------------------------
+    // AUTHENTICATION
+    // --------------------------------------------------
 
     const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "You must be logged in to book an appointment.",
         },
         { status: 401 }
       );
     }
+
     if (user.role !== "USER") {
-  return NextResponse.json(
-    { message: "Only patient accounts can book appointments." },
-    { status: 403 }
-  );
-}
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Only patient accounts can book appointments.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // --------------------------------------------------
+    // REQUEST BODY
+    // --------------------------------------------------
 
     const body = await request.json();
 
@@ -64,6 +76,10 @@ export async function POST(request: Request) {
       slotId?: string;
     };
 
+    // --------------------------------------------------
+    // BASIC VALIDATION
+    // --------------------------------------------------
+
     if (
       !name?.trim() ||
       !email?.trim() ||
@@ -74,6 +90,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "Please complete all required fields.",
         },
@@ -90,11 +107,16 @@ export async function POST(request: Request) {
     if (!validMeetingTypes.includes(meetingType)) {
       return NextResponse.json(
         {
+          success: false,
           message: "Invalid consultation type.",
         },
         { status: 400 }
       );
     }
+
+    // --------------------------------------------------
+    // CONNECTION METHOD VALIDATION
+    // --------------------------------------------------
 
     if (
       meetingType === "clinic" &&
@@ -102,6 +124,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "Clinic appointments do not require an online meeting.",
         },
@@ -115,6 +138,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "Please select a connection method.",
         },
@@ -129,6 +153,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "Voice consultations must use Zoom or LiveKit.",
         },
@@ -146,6 +171,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "Invalid connection method for video consultation.",
         },
@@ -153,15 +179,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const doctor = await prisma.doctor.findUnique({
-      where: {
-        id: doctorId,
-      },
-    });
+    // --------------------------------------------------
+    // FIND DOCTOR
+    // --------------------------------------------------
+
+    const doctor =
+      await prisma.doctor.findUnique({
+        where: {
+          id: doctorId,
+        },
+      });
 
     if (!doctor || !doctor.isActive) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "Selected specialist is not available.",
         },
@@ -169,16 +201,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // --------------------------------------------------
+    // FIND SLOT
+    // --------------------------------------------------
 
-    const slot = await prisma.availableSlot.findUnique({
-      where: {
-        id: slotId,
-      },
-    });
+    const slot =
+      await prisma.availableSlot.findUnique({
+        where: {
+          id: slotId,
+        },
+      });
 
     if (!slot) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "Selected appointment slot does not exist.",
         },
@@ -189,6 +226,7 @@ export async function POST(request: Request) {
     if (slot.doctorId !== doctorId) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "Selected slot does not belong to this specialist.",
         },
@@ -199,6 +237,7 @@ export async function POST(request: Request) {
     if (slot.status !== "AVAILABLE") {
       return NextResponse.json(
         {
+          success: false,
           message:
             "This appointment slot is no longer available. Please select another time.",
         },
@@ -206,11 +245,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const appointmentDate = new Date(slot.date);
+    // --------------------------------------------------
+    // DATE / TIME
+    // --------------------------------------------------
 
-    if (Number.isNaN(appointmentDate.getTime())) {
+    const appointmentDate =
+      new Date(slot.date);
+
+    if (
+      Number.isNaN(
+        appointmentDate.getTime()
+      )
+    ) {
       return NextResponse.json(
         {
+          success: false,
           message:
             "The selected appointment date is invalid.",
         },
@@ -218,9 +267,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const appointmentTime = slot.startTime;
+    const appointmentTime =
+      slot.startTime;
 
-    const trimmedName = name.trim();
+    // --------------------------------------------------
+    // CLEAN INPUT
+    // --------------------------------------------------
+
+    const trimmedName =
+      name.trim();
 
     const trimmedEmail =
       email.trim().toLowerCase();
@@ -228,208 +283,184 @@ export async function POST(request: Request) {
     const trimmedConcerns =
       concerns.trim();
 
-    const prismaMeetingType =
-      meetingType.toUpperCase() as
-        | "CLINIC"
-        | "VIDEO"
-        | "VOICE";
+    // --------------------------------------------------
+    // MEETING PROVIDER
+    // --------------------------------------------------
 
     let meetingProvider:
       | "NONE"
       | "ZOOM"
-      | "GOOGLE_MEET" = "NONE";
-
-    let externalMeetingId:
-      | string
-      | null = null;
-
-    let meetingUrl:
-      | string
-      | null = null;
-
-    let hostUrl:
-      | string
-      | null = null;
-
-    let roomName:
-      | string
-      | null = null;
-
+      | "GOOGLE_MEET"
+      | "LIVEKIT" = "NONE";
 
     if (meetingType !== "clinic") {
-
-      if (connectionMethod === "zoom") {
-        const zoomMeeting =
-          await createZoomMeeting({
-            topic: `${
-              meetingType === "voice"
-                ? "Voice"
-                : "Video"
-            } Consultation - ${trimmedName}`,
-
-            startTime:
-              appointmentDate.toISOString(),
-
-            duration: 30,
-
-            patientName: trimmedName,
-          });
-
-        meetingProvider = "ZOOM";
-
-        externalMeetingId =
-          String(zoomMeeting.id);
-
-        meetingUrl =
-          zoomMeeting.join_url;
-
-        hostUrl =
-          zoomMeeting.start_url;
-      }
-      else if (
-        connectionMethod === "google_meet"
+      if (
+        connectionMethod === "zoom"
       ) {
-        const endDate = new Date(
-          appointmentDate.getTime() +
-            30 * 60 * 1000
-        );
+        meetingProvider = "ZOOM";
+      }
 
-        const googleMeeting =
-          await createGoogleMeet({
-            title: `Video Consultation - ${trimmedName}`,
-
-            description: [
-              `Patient: ${trimmedName}`,
-              `Doctor: ${doctor.name}`,
-              `Consultation Type: Video`,
-              `Concerns: ${trimmedConcerns}`,
-            ].join("\n"),
-
-            startTime:
-              appointmentDate.toISOString(),
-
-            endTime:
-              endDate.toISOString(),
-
-            patientEmail:
-              trimmedEmail,
-          });
-
+      if (
+        connectionMethod ===
+        "google_meet"
+      ) {
         meetingProvider =
           "GOOGLE_MEET";
-
-        externalMeetingId =
-          googleMeeting.eventId || null;
-
-        meetingUrl =
-          googleMeeting.meetingUrl;
-
-        hostUrl =
-          googleMeeting.htmlLink || null;
       }
-      else if (
+
+      if (
         connectionMethod === "livekit"
       ) {
-        roomName = `appointment-${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2, 10)}`;
-
-        await roomService.createRoom({
-          name: roomName,
-
-          emptyTimeout:
-            10 * 60,
-
-          maxParticipants: 10,
-        });
-        meetingProvider = "NONE";
+        meetingProvider =
+          "LIVEKIT";
       }
     }
+
+    // --------------------------------------------------
+    // APPOINTMENT FEE
+    // --------------------------------------------------
+    //
+    // Doctor currently has no consultationFee
+    // field in Prisma.
+    //
+    // Therefore we use a server-side environment
+    // variable instead of trusting the frontend.
+    //
+
+    const consultationFee =
+      Number(
+        process.env.APPOINTMENT_FEE_PKR
+      );
+
+    if (
+      !Number.isFinite(
+        consultationFee
+      ) ||
+      consultationFee <= 0
+    ) {
+      console.error(
+        "APPOINTMENT_FEE_PKR is not configured correctly."
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Appointment fee is not configured.",
+        },
+        { status: 500 }
+      );
+    }
+
+    // --------------------------------------------------
+    // CREATE APPOINTMENT
+    // + RESERVE SLOT
+    // + CREATE PAYMENT
+    // --------------------------------------------------
 
     const result =
       await prisma.$transaction(
         async (tx) => {
+          /*
+           * Atomic slot reservation.
+           *
+           * This prevents two users from booking
+           * the same slot simultaneously.
+           */
+
           const reservedSlot =
-            await tx.availableSlot.updateMany({
-              where: {
-                id: slotId,
+            await tx.availableSlot.updateMany(
+              {
+                where: {
+                  id: slotId,
+                  doctorId,
+                  status: "AVAILABLE",
+                },
+                data: {
+                  status: "BOOKED",
+                },
+              }
+            );
 
-                doctorId,
-
-                status: "AVAILABLE",
-              },
-
-              data: {
-                status: "BOOKED",
-              },
-            });
-
-          if (reservedSlot.count !== 1) {
+          if (
+            reservedSlot.count !== 1
+          ) {
             throw new Error(
               "This appointment slot is no longer available. Please select another time."
             );
           }
+
+          // ------------------------------------------------
+          // CREATE APPOINTMENT
+          // ------------------------------------------------
+
           const appointment =
             await tx.appointment.create({
               data: {
                 name: trimmedName,
-
                 email: trimmedEmail,
-
-                concerns:
-                  trimmedConcerns,
+                concerns: trimmedConcerns,
 
                 meetingType:
-                  prismaMeetingType,
-
-                connectionProvider:
-                  meetingProvider,
+                  meetingType.toUpperCase() as
+                    | "CLINIC"
+                    | "VIDEO"
+                    | "VOICE",
 
                 appointmentDate,
-
                 appointmentTime,
+
+                fee: consultationFee,
+                currency: "PKR",
 
                 status: "PENDING",
 
                 userId: user.id,
+                doctorId: doctor.id,
+                slotId: slot.id,
 
-                doctorId,
-
-                slotId,
+                connectionProvider:
+                  meetingProvider,
               },
             });
 
-          let meeting = null;
+          // ------------------------------------------------
+          // CREATE PAYMENT
+          // ------------------------------------------------
 
-          if (meetingType !== "clinic") {
-            meeting =
-              await tx.meeting.create({
-                data: {
-                  appointmentId:
-                    appointment.id,
+          const payment =
+            await tx.payment.create({
+              data: {
+                appointmentId:
+                  appointment.id,
 
-                  provider:
-                    meetingProvider,
+                userId: user.id,
 
-                  externalMeetingId,
+                provider:
+                  "SAFEPAY",
 
-                  meetingUrl,
+                /*
+                 * The customer chooses the actual
+                 * payment method on Safepay checkout.
+                 */
+                method: "UNKNOWN",
 
-                  hostUrl,
+                amount:
+                  consultationFee,
 
-                  roomName,
+                currency: "PKR",
 
-                  type:
-                    prismaMeetingType,
+                status: "PENDING",
+              },
+            });
 
-                  status: "CREATED",
-                },
-              });
-          }
+          // ------------------------------------------------
+          // PATIENT NOTIFICATION
+          // ------------------------------------------------
+
           await tx.notification.create({
             data: {
               userId: user.id,
-
               appointmentId:
                 appointment.id,
 
@@ -440,14 +471,17 @@ export async function POST(request: Request) {
                 "Appointment Request Submitted",
 
               message:
-                `Your ${meetingType} consultation with ${doctor.name} has been submitted for ${appointmentTime}.`,
+                `Your ${meetingType} consultation with ${doctor.name} has been submitted for ${appointmentTime}. Please complete the payment to continue.`,
             },
           });
+
+          // ------------------------------------------------
+          // DOCTOR NOTIFICATION
+          // ------------------------------------------------
 
           await tx.notification.create({
             data: {
               doctorId: doctor.id,
-
               appointmentId:
                 appointment.id,
 
@@ -458,88 +492,183 @@ export async function POST(request: Request) {
                 "New Appointment Request",
 
               message:
-                `${trimmedName} has requested a ${meetingType} consultation for ${appointmentTime}.`,
+                `${trimmedName} has requested a ${meetingType} consultation for ${appointmentTime}. Payment is pending.`,
             },
           });
 
           return {
             appointment,
-            meeting,
+            payment,
           };
         }
       );
-      try {
-  await sendAppointmentWhatsAppNotification({
-    appointmentId:
-      result.appointment.id,
 
-    type: "APPOINTMENT_CREATED",
-  });
-} catch (error) {
-  console.error(
-    "WhatsApp notification failed:",
-    error
-  );
-}
+    // --------------------------------------------------
+    // CREATE SAFEPAY CHECKOUT
+    // --------------------------------------------------
+
+    let safepay;
+
+    try {
+      safepay =
+        await createSafepayPayment({
+          amount:
+            consultationFee,
+
+          currency: "PKR",
+
+          appointmentId:
+            result.appointment.id,
+
+          userId: user.id,
+        });
+    } catch (safepayError) {
+      console.error(
+        "Safepay checkout creation failed:",
+        safepayError
+      );
+
+      /*
+       * Safepay failed after the appointment was
+       * created, so release the slot and cancel
+       * the appointment.
+       */
+
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.payment.update({
+            where: {
+              id: result.payment.id,
+            },
+            data: {
+              status: "FAILED",
+              failureReason:
+                "Unable to create Safepay checkout.",
+            },
+          });
+
+          await tx.appointment.update({
+            where: {
+              id: result.appointment.id,
+            },
+            data: {
+              status: "CANCELLED",
+              cancellationReason:
+                "Payment checkout could not be created.",
+              cancelledAt:
+                new Date(),
+              cancelledBy:
+                "SYSTEM",
+            },
+          });
+
+          await tx.availableSlot.update({
+            where: {
+              id: slot.id,
+            },
+            data: {
+              status: "AVAILABLE",
+            },
+          });
+        }
+      );
+
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Unable to initialize payment. Please try again.",
+        },
+        { status: 502 }
+      );
+    }
+
+    // --------------------------------------------------
+    // SAVE SAFEPAY DETAILS
+    // --------------------------------------------------
+
+    const updatedPayment =
+      await prisma.payment.update({
+        where: {
+          id: result.payment.id,
+        },
+
+        data: {
+          trackerToken:
+            safepay.tracker,
+
+          checkoutUrl:
+            safepay.checkoutUrl,
+
+          status:
+            "PROCESSING",
+        },
+      });
+
+    // --------------------------------------------------
+    // WHATSAPP
+    // --------------------------------------------------
+
+    try {
+      await sendAppointmentWhatsAppNotification(
+        {
+          appointmentId:
+            result.appointment.id,
+
+          type:
+            "APPOINTMENT_CREATED",
+        }
+      );
+    } catch (error) {
+      console.error(
+        "WhatsApp notification failed:",
+        error
+      );
+    }
+
+    // --------------------------------------------------
+    // RESPONSE
+    // --------------------------------------------------
 
     return NextResponse.json(
       {
         success: true,
 
-        message:
-          "Appointment booked successfully.",
-
         appointment: {
-          id: result.appointment.id,
+          id:
+            result.appointment.id,
 
-          name:
-            result.appointment.name,
+          date:
+            result.appointment
+              .appointmentDate,
 
-          email:
-            result.appointment.email,
+          time:
+            result.appointment
+              .appointmentTime,
 
-          meetingType:
-            result.appointment.meetingType,
+          fee:
+            result.appointment.fee,
 
-          appointmentDate:
-            result.appointment.appointmentDate,
-
-          appointmentTime:
-            result.appointment.appointmentTime,
+          currency:
+            result.appointment
+              .currency,
 
           status:
-            result.appointment.status,
+            result.appointment
+              .status,
+        },
 
-          doctor: {
-            id: doctor.id,
+        payment: {
+          id:
+            updatedPayment.id,
 
-            name: doctor.name,
-          },
+          status:
+            updatedPayment.status,
 
-          meeting: result.meeting
-            ? {
-                id:
-                  result.meeting.id,
-
-                provider:
-                  result.meeting.provider,
-
-                type:
-                  result.meeting.type,
-
-                status:
-                  result.meeting.status,
-
-                meetingUrl:
-                  result.meeting.meetingUrl,
-
-                roomName:
-                  result.meeting.roomName,
-              }
-            : null,
+          checkoutUrl:
+            updatedPayment.checkoutUrl,
         },
       },
-
       {
         status: 201,
       }
@@ -574,7 +703,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        message,
+        message:
+          "Unable to book appointment.",
       },
       {
         status: 500,

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['192.168.168.124'],
+  allowedDevOrigins: ['192.168.168.124','broadways-dealmaker-jingle.ngrok-free.dev'],
   images: {
     remotePatterns: [
       {

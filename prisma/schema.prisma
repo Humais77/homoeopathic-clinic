@@ -33,6 +33,7 @@ model User {
   notifications               Notification[]
   treatments                  Treatment[]
   whatsappMessages            WhatsAppMessage[]
+  payments                    Payment[]
 
   @@index([status])
   @@index([role])
@@ -150,30 +151,41 @@ model Doctor {
 }
 
 model Appointment {
-  id                 String            @id @default(cuid())
-  name               String
-  email              String
-  concerns           String
-  meetingType        MeetingType
-  appointmentDate    DateTime
-  appointmentTime    String
-  status             AppointmentStatus @default(PENDING)
-  userId             String?
-  doctorId           String
+  id              String            @id @default(cuid())
+  name            String
+  email           String
+  concerns        String
+  meetingType     MeetingType
+  appointmentDate DateTime
+  appointmentTime String
+  status          AppointmentStatus @default(PENDING)
+
+  userId   String?
+  doctorId String
+
+  fee      Decimal @db.Decimal(12, 2)
+  currency String  @default("PKR")
+
   cancelledAt        DateTime?
   cancelledBy        String?
   cancellationReason String?
   userHiddenAt       DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  connectionProvider MeetingProvider   @default(NONE)
-  slotId             String?           @unique
-  doctor             Doctor            @relation(fields: [doctorId], references: [id])
-  slot               AvailableSlot?    @relation(fields: [slotId], references: [id])
-  user               User?             @relation(fields: [userId], references: [id])
-  meeting            Meeting?
-  notifications      Notification[]
-  whatsappMessages   WhatsAppMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  connectionProvider MeetingProvider @default(NONE)
+  slotId             String?         @unique
+
+  doctor Doctor         @relation(fields: [doctorId], references: [id])
+  slot   AvailableSlot? @relation(fields: [slotId], references: [id])
+  user   User?          @relation(fields: [userId], references: [id])
+
+  meeting Meeting?
+  payment Payment?
+
+  notifications    Notification[]
+  whatsappMessages WhatsAppMessage[]
 
   @@index([userId])
   @@index([doctorId])
@@ -381,6 +393,51 @@ model WhatsAppMessage {
   @@map("whatsapp_messages")
 }
 
+model Payment {
+  id String @id @default(cuid())
+
+  appointmentId String  @unique
+  userId        String?
+
+  provider PaymentProvider
+  method   PaymentMethod
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String  @default("PKR")
+
+  status PaymentStatus @default(PENDING)
+
+  transactionId     String?
+  providerPaymentId String?
+  providerReference String?
+
+  trackerToken String?
+
+  checkoutUrl String?
+
+  failureReason String?
+
+  paidAt    DateTime?
+  expiresAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider])
+  @@index([transactionId])
+  @@index([providerPaymentId])
+  @@index([trackerToken])
+  @@index([createdAt])
+  @@map("payments")
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -480,4 +537,26 @@ enum TreatmentStatus {
   PUBLISHED
   REJECTED
   ARCHIVED
+}
+
+enum PaymentProvider {
+  SAFEPAY
+}
+
+enum PaymentMethod {
+  CARD
+  BANK
+  WALLET
+  RAAST
+  UNKNOWN
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+  EXPIRED
 }

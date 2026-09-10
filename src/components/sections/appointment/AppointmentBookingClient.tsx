@@ -142,11 +142,9 @@ function StarRating() {
 
 function formatSlotTime(time: string) {
   const [hoursString, minutes] = time.split(":");
-
   const hours = Number(hoursString);
 
   const suffix = hours >= 12 ? "PM" : "AM";
-
   const displayHour = hours % 12 || 12;
 
   return `${displayHour}:${minutes} ${suffix}`;
@@ -169,11 +167,7 @@ function getTodayKey() {
 function getInitialCalendarDate() {
   const now = new Date();
 
-  return new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    1
-  );
+  return new Date(now.getFullYear(), now.getMonth(), 1);
 }
 
 export function AppointmentBookingClient({
@@ -216,18 +210,15 @@ export function AppointmentBookingClient({
   const [email, setEmail] = useState("");
   const [concerns, setConcerns] = useState("");
 
-  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const calendarYear = calendarDate.getFullYear();
   const calendarMonth = calendarDate.getMonth();
 
   /*
-   * Load real slots whenever:
-   *
-   * doctor changes
-   * OR
-   * date changes
+   * Load real available slots whenever
+   * doctor or date changes.
    */
   useEffect(() => {
     if (!selectedDoctorId || !selectedDate) {
@@ -255,11 +246,25 @@ export function AppointmentBookingClient({
           }
         );
 
-        const data = await response.json();
+        let data: {
+          slots?: AvailableSlot[];
+          error?: string;
+          message?: string;
+        };
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error(
+            "Unable to read the available slots response."
+          );
+        }
 
         if (!response.ok) {
           throw new Error(
-            data.error || "Failed to load available slots."
+            data.error ||
+              data.message ||
+              "Failed to load available slots."
           );
         }
 
@@ -274,6 +279,9 @@ export function AppointmentBookingClient({
 
         setSlots(availableSlots);
 
+        /*
+         * Automatically select the first available slot.
+         */
         if (availableSlots.length > 0) {
           setSelectedSlotId(availableSlots[0].id);
         }
@@ -307,6 +315,9 @@ export function AppointmentBookingClient({
     };
   }, [selectedDoctorId, selectedDate]);
 
+  /*
+   * Calendar days.
+   */
   const days = useMemo(() => {
     const year = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
@@ -335,7 +346,14 @@ export function AppointmentBookingClient({
       dateKey: string;
     }[] = [];
 
-    for (let i = firstDay - 1; i >= 0; i--) {
+    /*
+     * Previous month days.
+     */
+    for (
+      let i = firstDay - 1;
+      i >= 0;
+      i--
+    ) {
       const day = previousMonthDays - i;
 
       result.push({
@@ -345,6 +363,9 @@ export function AppointmentBookingClient({
       });
     }
 
+    /*
+     * Current month days.
+     */
     for (
       let day = 1;
       day <= totalDays;
@@ -361,6 +382,9 @@ export function AppointmentBookingClient({
       });
     }
 
+    /*
+     * Next month days.
+     */
     let nextMonthDay = 1;
 
     while (result.length < 42) {
@@ -388,14 +412,14 @@ export function AppointmentBookingClient({
     );
 
     /*
-     * Do not allow booking dates in the past.
+     * Don't allow booking dates in the past.
      */
     if (dateKey < todayKey) {
       return;
     }
 
     setSelectedDate(dateKey);
-    setSubmitted(false);
+    setErrorMessage("");
   }
 
   function goPreviousMonth() {
@@ -406,8 +430,8 @@ export function AppointmentBookingClient({
     );
 
     /*
-     * Don't allow navigating before the
-     * current month.
+     * Don't allow navigation before
+     * the current month.
      */
     const currentMonth = new Date(
       new Date().getFullYear(),
@@ -432,11 +456,26 @@ export function AppointmentBookingClient({
     );
   }
 
+  /*
+   * Submit appointment.
+   *
+   * Flow:
+   *
+   * 1. Validate form
+   * 2. Create appointment
+   * 3. Create Safepay payment
+   * 4. Redirect patient to Safepay
+   */
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>
   ) {
     e.preventDefault();
 
+    setErrorMessage("");
+
+    /*
+     * Authentication check.
+     */
     if (!isAuthenticated) {
       window.location.href =
         "/login?redirect=/appointment";
@@ -444,20 +483,25 @@ export function AppointmentBookingClient({
       return;
     }
 
-    setSubmitted(false);
-
+    /*
+     * Basic validation.
+     */
     if (!selectedDoctorId) {
-      alert("Please select a specialist.");
+      setErrorMessage(
+        "Please select a specialist."
+      );
       return;
     }
 
     if (!selectedDate) {
-      alert("Please select an appointment date.");
+      setErrorMessage(
+        "Please select an appointment date."
+      );
       return;
     }
 
     if (!selectedSlotId) {
-      alert(
+      setErrorMessage(
         "Please select an available time slot."
       );
       return;
@@ -467,24 +511,28 @@ export function AppointmentBookingClient({
       meetingType === "video" &&
       !connectionMethod
     ) {
-      alert(
+      setErrorMessage(
         "Please select an online consultation platform."
       );
       return;
     }
 
     if (!name.trim()) {
-      alert("Please enter your name.");
+      setErrorMessage(
+        "Please enter your name."
+      );
       return;
     }
 
     if (!email.trim()) {
-      alert("Please enter your email.");
+      setErrorMessage(
+        "Please enter your email."
+      );
       return;
     }
 
     if (!concerns.trim()) {
-      alert(
+      setErrorMessage(
         "Please briefly describe your concerns."
       );
       return;
@@ -496,11 +544,11 @@ export function AppointmentBookingClient({
       /*
        * IMPORTANT:
        *
-       * We send slotId instead of trusting the
-       * client for appointmentDate/time.
+       * We only send slotId.
        *
-       * Your backend should derive the actual
-       * date/time from AvailableSlot.
+       * The server must derive the real
+       * appointment date and time from
+       * AvailableSlot.
        */
       const response = await fetch(
         "/api/appointments",
@@ -523,15 +571,32 @@ export function AppointmentBookingClient({
 
             concerns: concerns.trim(),
 
-            doctorId: selectedDoctorId,
+            doctorId:
+              selectedDoctorId,
 
-            slotId: selectedSlotId,
+            slotId:
+              selectedSlotId,
           }),
         }
       );
 
-      let data;
+      let data: {
+        success?: boolean;
+        message?: string;
+        error?: string;
+        appointment?: {
+          id: string;
+        };
+        payment?: {
+          id?: string;
+          checkoutUrl?: string;
+          status?: string;
+        };
+      };
 
+      /*
+       * Safely parse response.
+       */
       try {
         data = await response.json();
       } catch (jsonError) {
@@ -545,70 +610,69 @@ export function AppointmentBookingClient({
         );
       }
 
+      /*
+       * API error.
+       */
       if (!response.ok) {
         throw new Error(
           data.message ||
             data.error ||
-            "Failed to book appointment."
+            "Failed to create appointment."
         );
       }
-
-      setSubmitted(true);
-
-      setName("");
-      setEmail("");
-      setConcerns("");
 
       /*
-       * Reload slots after successful booking.
+       * Safepay checkout URL.
        *
-       * This is important because the selected
-       * slot has now become BOOKED.
+       * Your appointment API should return:
+       *
+       * {
+       *   success: true,
+       *   appointment: {...},
+       *   payment: {
+       *     id: "...",
+       *     checkoutUrl: "https://..."
+       *   }
+       * }
        */
-      setSelectedSlotId("");
+      const checkoutUrl =
+        data.payment?.checkoutUrl;
 
-      const refreshResponse =
-        await fetch(
-          `/api/appointments/available-slots?doctorId=${encodeURIComponent(
-            selectedDoctorId
-          )}&date=${encodeURIComponent(
-            selectedDate
-          )}`,
-          {
-            cache: "no-store",
-          }
+      if (!checkoutUrl) {
+        console.error(
+          "Appointment API response:",
+          data
         );
 
-      if (refreshResponse.ok) {
-        const refreshData =
-          await refreshResponse.json();
-
-        const availableSlots: AvailableSlot[] =
-          (refreshData.slots || []).filter(
-            (slot: AvailableSlot) =>
-              slot.status === "AVAILABLE"
-          );
-
-        setSlots(availableSlots);
-
-        if (availableSlots.length > 0) {
-          setSelectedSlotId(
-            availableSlots[0].id
-          );
-        }
+        throw new Error(
+          "Payment checkout URL was not returned. Please try again."
+        );
       }
 
-      console.log(
-        "Appointment created:",
-        data.appointment
-      );
+      /*
+       * Redirect to Safepay hosted checkout.
+       *
+       * Do NOT mark the appointment as
+       * confirmed here.
+       *
+       * The webhook will mark the Payment
+       * as PAID after Safepay confirms payment.
+       */
+      window.location.href =
+        checkoutUrl;
+
+      /*
+       * Nothing below this point should
+       * execute during normal checkout.
+       */
+      return;
     } catch (error) {
       console.error(
         "Appointment booking error:",
         error
       );
 
-      alert(
+      setErrorMessage(
         error instanceof Error
           ? error.message
           : "Something went wrong. Please try again."
@@ -620,8 +684,9 @@ export function AppointmentBookingClient({
 
   return (
     <div>
-      {/* MEETING TYPES */}
-
+      {/* =====================================================
+          MEETING TYPES
+          ===================================================== */}
       <div className="grid gap-4 md:grid-cols-2">
         {meetingTypes
           .filter(
@@ -638,19 +703,28 @@ export function AppointmentBookingClient({
                 key={type.id}
                 type="button"
                 onClick={() => {
-                  setMeetingType(type.id);
+                  setMeetingType(
+                    type.id
+                  );
 
-                  if (type.id === "clinic") {
-                    setConnectionMethod(null);
+                  if (
+                    type.id === "clinic"
+                  ) {
+                    setConnectionMethod(
+                      null
+                    );
                   } else if (
                     type.id === "video"
                   ) {
+                    /*
+                     * Default online method.
+                     */
                     setConnectionMethod(
                       "google_meet"
                     );
                   }
 
-                  setSubmitted(false);
+                  setErrorMessage("");
                 }}
                 className={`rounded-[20px] border-2 p-5 text-left transition-all md:min-h-[152px] ${
                   selected
@@ -690,16 +764,20 @@ export function AppointmentBookingClient({
           })}
       </div>
 
-      {/* ONLINE CONNECTION METHODS */}
+      {/* =====================================================
+          ONLINE CONNECTION METHODS
+          ===================================================== */}
+      {meetingType === "video" && (
+        <div className="mt-6">
+          <ConnectionMethods
+            methods={connectionMethods}
+          />
+        </div>
+      )}
 
-      <div className="mt-6">
-        <ConnectionMethods
-          methods={connectionMethods}
-        />
-      </div>
-
-      {/* CALENDAR + SLOTS */}
-
+      {/* =====================================================
+          CALENDAR + SLOTS
+          ===================================================== */}
       <div className="mt-6">
         <h3 className="mb-4 text-xl font-bold text-[#10105c]">
           Select your preferred time
@@ -707,7 +785,6 @@ export function AppointmentBookingClient({
 
         <div className="grid gap-6 lg:grid-cols-[1.3fr_0.9fr]">
           {/* Calendar */}
-
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h4 className="text-sm font-bold text-gray-700">
@@ -723,8 +800,11 @@ export function AppointmentBookingClient({
               <div className="flex gap-1">
                 <button
                   type="button"
-                  onClick={goPreviousMonth}
-                  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400"
+                  onClick={
+                    goPreviousMonth
+                  }
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400 transition hover:bg-gray-50"
+                  aria-label="Previous month"
                 >
                   <ChevronLeft />
                 </button>
@@ -732,7 +812,8 @@ export function AppointmentBookingClient({
                 <button
                   type="button"
                   onClick={goNextMonth}
-                  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400"
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 text-gray-400 transition hover:bg-gray-50"
+                  aria-label="Next month"
                 >
                   <ChevronRight />
                 </button>
@@ -757,50 +838,52 @@ export function AppointmentBookingClient({
                 </div>
               ))}
 
-              {days.map((item, index) => {
-                const disabled =
-                  !item.currentMonth ||
-                  item.dateKey < todayKey;
+              {days.map(
+                (item, index) => {
+                  const disabled =
+                    !item.currentMonth ||
+                    item.dateKey <
+                      todayKey;
 
-                const selected =
-                  item.currentMonth &&
-                  item.dateKey ===
-                    selectedDate;
+                  const selected =
+                    item.currentMonth &&
+                    item.dateKey ===
+                      selectedDate;
 
-                return (
-                  <button
-                    key={`${item.day}-${index}`}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => {
-                      if (
-                        item.currentMonth &&
-                        !disabled
-                      ) {
-                        selectDate(
-                          calendarYear,
-                          calendarMonth,
-                          item.day
-                        );
-                      }
-                    }}
-                    className={`flex h-9 items-center justify-center rounded-lg text-xs transition ${
-                      selected
-                        ? "bg-[#151568] font-bold text-white"
-                        : disabled
-                          ? "cursor-not-allowed text-gray-300"
-                          : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {item.day}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={`${item.day}-${index}`}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        if (
+                          item.currentMonth &&
+                          !disabled
+                        ) {
+                          selectDate(
+                            calendarYear,
+                            calendarMonth,
+                            item.day
+                          );
+                        }
+                      }}
+                      className={`flex h-9 items-center justify-center rounded-lg text-xs transition ${
+                        selected
+                          ? "bg-[#151568] font-bold text-white"
+                          : disabled
+                            ? "cursor-not-allowed text-gray-300"
+                            : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {item.day}
+                    </button>
+                  );
+                }
+              )}
             </div>
           </div>
 
-          {/* REAL AVAILABLE SLOTS */}
-
+          {/* Available slots */}
           <div className="rounded-[20px] bg-[#3da449] p-4">
             <h4 className="mb-1 text-center text-sm font-bold text-white">
               Available Slots
@@ -837,8 +920,7 @@ export function AppointmentBookingClient({
                         setSelectedSlotId(
                           slot.id
                         );
-
-                        setSubmitted(false);
+                        setErrorMessage("");
                       }}
                       className={`rounded-full border px-3 py-2 text-[10px] font-medium transition ${
                         selected
@@ -862,8 +944,9 @@ export function AppointmentBookingClient({
         </div>
       </div>
 
-      {/* DOCTORS */}
-
+      {/* =====================================================
+          DOCTORS
+          ===================================================== */}
       <div className="mt-6">
         <h3 className="mb-4 text-xl font-bold text-[#10105c]">
           Choose your specialist
@@ -871,34 +954,38 @@ export function AppointmentBookingClient({
 
         {doctors.length === 0 ? (
           <div className="rounded-[20px] bg-gray-50 p-5 text-sm text-gray-500">
-            No specialists are currently
-            available.
+            No specialists are
+            currently available.
           </div>
         ) : (
           <>
             {/* Doctor Dropdown */}
-
             <div className="relative mb-3">
               <select
-                value={selectedDoctorId}
+                value={
+                  selectedDoctorId
+                }
                 onChange={(e) => {
                   setSelectedDoctorId(
                     e.target.value
                   );
-
-                  setSubmitted(false);
+                  setErrorMessage("");
                 }}
-                className="h-12 w-full appearance-none rounded-full border border-gray-200 bg-[#fafafa] px-4 pr-10 text-xs text-gray-700 outline-none focus:border-[#3da449]"
+                className="h-12 w-full appearance-none rounded-full border border-gray-200 bg-[#fafafa] px-4 pr-10 text-xs text-gray-700 outline-none transition focus:border-[#3da449]"
               >
-                {doctors.map((doctor) => (
-                  <option
-                    key={doctor.id}
-                    value={doctor.id}
-                  >
-                    {doctor.name} -{" "}
-                    {doctor.qualification}
-                  </option>
-                ))}
+                {doctors.map(
+                  (doctor) => (
+                    <option
+                      key={doctor.id}
+                      value={doctor.id}
+                    >
+                      {doctor.name} -{" "}
+                      {
+                        doctor.qualification
+                      }
+                    </option>
+                  )
+                )}
               </select>
 
               <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
@@ -907,14 +994,17 @@ export function AppointmentBookingClient({
             </div>
 
             {/* Selected Doctor */}
-
             {selectedDoctor && (
               <div className="flex items-center gap-4 rounded-[22px] bg-[#f8f8f7] p-3">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full">
                   {selectedDoctor.image ? (
                     <Image
-                      src={selectedDoctor.image}
-                      alt={selectedDoctor.name}
+                      src={
+                        selectedDoctor.image
+                      }
+                      alt={
+                        selectedDoctor.name
+                      }
                       fill
                       className="object-cover"
                     />
@@ -929,7 +1019,9 @@ export function AppointmentBookingClient({
 
                 <div>
                   <h4 className="text-sm font-bold text-[#10105c]">
-                    {selectedDoctor.name}
+                    {
+                      selectedDoctor.name
+                    }
                   </h4>
 
                   <p className="text-[11px] text-gray-500">
@@ -962,8 +1054,9 @@ export function AppointmentBookingClient({
         )}
       </div>
 
-      {/* PATIENT FORM */}
-
+      {/* =====================================================
+          PATIENT FORM
+          ===================================================== */}
       <form
         onSubmit={handleSubmit}
         className="mt-7"
@@ -974,7 +1067,6 @@ export function AppointmentBookingClient({
 
         <div className="grid gap-4 md:grid-cols-2">
           {/* Full Name */}
-
           <div>
             <label className="mb-2 block text-[9px] font-semibold text-gray-600">
               FULL NAME
@@ -985,16 +1077,19 @@ export function AppointmentBookingClient({
               required
               value={name}
               onChange={(e) => {
-                setName(e.target.value);
-                setSubmitted(false);
+                setName(
+                  e.target.value
+                );
+                setErrorMessage("");
               }}
-              placeholder={form.namePlaceholder}
+              placeholder={
+                form.namePlaceholder
+              }
               className="h-11 w-full rounded-full border border-gray-200 bg-[#fafafa] px-4 text-xs text-gray-700 outline-none transition focus:border-[#3da449]"
             />
           </div>
 
           {/* Email */}
-
           <div>
             <label className="mb-2 block text-[9px] font-semibold text-gray-600">
               EMAIL ADDRESS
@@ -1005,8 +1100,10 @@ export function AppointmentBookingClient({
               required
               value={email}
               onChange={(e) => {
-                setEmail(e.target.value);
-                setSubmitted(false);
+                setEmail(
+                  e.target.value
+                );
+                setErrorMessage("");
               }}
               placeholder={
                 form.emailPlaceholder
@@ -1017,7 +1114,6 @@ export function AppointmentBookingClient({
         </div>
 
         {/* Concerns */}
-
         <div className="mt-4">
           <label className="mb-2 block text-[9px] font-semibold text-gray-600">
             BRIEFLY DESCRIBE YOUR CONCERNS
@@ -1027,8 +1123,10 @@ export function AppointmentBookingClient({
             required
             value={concerns}
             onChange={(e) => {
-              setConcerns(e.target.value);
-              setSubmitted(false);
+              setConcerns(
+                e.target.value
+              );
+              setErrorMessage("");
             }}
             placeholder={
               form.concernsPlaceholder
@@ -1038,18 +1136,29 @@ export function AppointmentBookingClient({
           />
         </div>
 
-        {/* Success */}
-
-        {submitted && (
-          <div className="mt-4 rounded-xl bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-            Your appointment request has been
-            received. We will contact you
-            shortly.
+        {/* Error */}
+        {errorMessage && (
+          <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {errorMessage}
           </div>
         )}
 
-        {/* Buttons */}
+        {/* Payment information */}
+        <div className="mt-4 rounded-xl bg-[#f5f7ff] px-4 py-3 text-xs leading-5 text-[#151568]">
+          <p className="font-semibold">
+            Secure payment
+          </p>
 
+          <p className="mt-1 text-gray-600">
+            After submitting your
+            appointment request, you will
+            be redirected to our secure
+            payment page to complete your
+            consultation payment.
+          </p>
+        </div>
+
+        {/* Buttons */}
         <div className="mt-5 flex flex-col justify-end gap-3 sm:flex-row">
           <button
             type="button"
@@ -1057,7 +1166,7 @@ export function AppointmentBookingClient({
               setName("");
               setEmail("");
               setConcerns("");
-              setSubmitted(false);
+              setErrorMessage("");
             }}
             disabled={loading}
             className="h-11 rounded-xl bg-gray-100 px-10 text-sm font-bold text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
@@ -1077,9 +1186,9 @@ export function AppointmentBookingClient({
             className="h-11 rounded-xl bg-[#3da449] px-8 text-sm font-bold text-white transition hover:bg-[#328d3e] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading
-              ? "Booking..."
+              ? "Creating Payment..."
               : isAuthenticated
-                ? "Book Appointment"
+                ? "Continue to Payment"
                 : "Login to Book Appointment"}
           </button>
         </div>
