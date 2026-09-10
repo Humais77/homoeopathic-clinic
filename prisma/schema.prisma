@@ -15,6 +15,10 @@ model User {
   phone         String?
   whatsappOptIn Boolean @default(false)
 
+  // Profile change limits
+  nameChangeCount  Int @default(0)
+  phoneChangeCount Int @default(0)
+
   role                        UserRole          @default(USER)
   emailVerified               Boolean           @default(false)
   verifyToken                 String?           @unique
@@ -25,15 +29,16 @@ model User {
   passwordResetTokenExpiresAt DateTime?
   sessionVersion              Int               @default(0)
   status                      UserStatus        @default(ACTIVE)
-  appointments                Appointment[]
-  auditLogs                   AuditLog[]
-  blogs                       Blog[]
-  doctor                      Doctor?
-  mediaAssets                 MediaAsset[]
-  notifications               Notification[]
-  treatments                  Treatment[]
-  whatsappMessages            WhatsAppMessage[]
-  payments                    Payment[]
+
+  appointments      Appointment[]
+  auditLogs         AuditLog[]
+  blogs             Blog[]
+  doctor            Doctor?
+  mediaAssets       MediaAsset[]
+  notifications     Notification[]
+  treatments        Treatment[]
+  whatsappMessages  WhatsAppMessage[]
+  payments          Payment[]
 
   @@index([status])
   @@index([role])

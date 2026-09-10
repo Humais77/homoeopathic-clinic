@@ -131,46 +131,41 @@ export function AuthProvider({
     try {
       setIsLoading(true);
 
-      const response = await fetch(
-        "/api/auth/login",
-        {
-          method: "POST",
+      const response = await fetch("/api/auth/login", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  credentials: "include",
+  body: JSON.stringify({
+    email,
+    password,
+  }),
+});
 
-          headers: {
-            "Content-Type": "application/json",
-          },
+const contentType = response.headers.get("content-type");
 
-          credentials: "include",
+let data: any = {};
 
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        }
-      );
+if (contentType?.includes("application/json")) {
+  data = await response.json();
+} else {
+  const text = await response.text();
 
-      const data = await response.json();
+  console.error(
+    "Login API returned non-JSON response:",
+    response.status,
+    text
+  );
 
-      if (!response.ok) {
-        setUser(null);
-
-        return {
-          success: false,
-          message:
-            data?.message ||
-            "Invalid email or password.",
-        };
-      }
-
-      if (!data?.user) {
-        setUser(null);
-
-        return {
-          success: false,
-          message:
-            "Login succeeded but user information was not returned.",
-        };
-      }
+  return {
+    success: false,
+    message:
+      response.status === 404
+        ? "Login API route was not found. Please check the API route location."
+        : "Unexpected server response. Please try again.",
+  };
+}
 
       setUser(data.user);
 

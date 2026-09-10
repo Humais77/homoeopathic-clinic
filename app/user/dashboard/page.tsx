@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import { AppointmentCard } from "@/src/components/dashboard/AppointmentCard";
+import Link from "next/link";
 
 type Meeting = {
   id: string;
@@ -352,33 +353,40 @@ export default function UserDashboardPage() {
           </div>
 
           {/* Profile */}
+            <Link
+  href="/user/profile"
+  className="group block rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-green-200 hover:shadow-md"
+>
+  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600 transition group-hover:bg-purple-100">
+    <svg
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M5.121 17.804A9 9 0 1118.879 6.196 9 9 0 015.121 17.804z"
+      />
+    </svg>
+  </div>
 
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5.121 17.804A9 9 0 1118.879 6.196 9 9 0 015.121 17.804z"
-                />
-              </svg>
-            </div>
+  <h3 className="text-lg font-semibold text-gray-900">
+    My Profile
+  </h3>
 
-            <h3 className="text-lg font-semibold">
-              My Profile
-            </h3>
+  <p className="mt-1 text-sm text-gray-500">
+    Manage your account information.
+  </p>
 
-            <p className="mt-1 text-sm text-gray-500">
-              Manage your account information.
-            </p>
+  <span className="mt-4 inline-block text-sm font-semibold text-[#3da449]">
+    Manage Profile →
+  </span>
+</Link>
           </div>
-        </div>
+        
       </main>
     </div>
   );
