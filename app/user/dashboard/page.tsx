@@ -326,31 +326,38 @@ export default function UserDashboardPage() {
 
           {/* Consultations */}
 
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-green-600">
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 10h8M8 14h5m-8 7l3.5-3.5H18a3 3 0 003-3V6a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3h1.5L5 21z"
-                />
-              </svg>
-            </div>
+          <Link
+  href="/user/consultations"
+  className="group block rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-green-200 hover:shadow-md"
+>
+  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-green-600 transition group-hover:bg-green-100">
+    <svg
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M8 10h8M8 14h5m-8 7l3.5-3.5H18a3 3 0 003-3V6a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3h1.5L5 21z"
+      />
+    </svg>
+  </div>
 
-            <h3 className="text-lg font-semibold">
-              My Consultations
-            </h3>
+  <h3 className="text-lg font-semibold text-gray-900">
+    My Consultations
+  </h3>
 
-            <p className="mt-1 text-sm text-gray-500">
-              View your consultation requests.
-            </p>
-          </div>
+  <p className="mt-1 text-sm text-gray-500">
+    View your consultation requests and doctor responses.
+  </p>
+
+  <span className="mt-4 inline-block text-sm font-semibold text-[#3da449]">
+    View Consultations →
+  </span>
+</Link>
 
           {/* Profile */}
             <Link

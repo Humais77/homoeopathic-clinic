@@ -15,7 +15,6 @@ model User {
   phone         String?
   whatsappOptIn Boolean @default(false)
 
-  // Profile change limits
   nameChangeCount  Int @default(0)
   phoneChangeCount Int @default(0)
 
@@ -39,6 +38,9 @@ model User {
   treatments        Treatment[]
   whatsappMessages  WhatsAppMessage[]
   payments          Payment[]
+
+  consultations          ConsultationInquiry[]
+  consultationMessages   ConsultationMessage[]
 
   @@index([status])
   @@index([role])
@@ -72,18 +74,49 @@ model ConsultationInquiry {
   message     String
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+
+  userId      String?
   doctorId    String?
   phone       String?
   treatmentId String
-  status      ConsultationStatus @default(PENDING)
-  doctor      Doctor?            @relation(fields: [doctorId], references: [id])
-  treatment   Treatment          @relation(fields: [treatmentId], references: [id])
 
+  status ConsultationStatus @default(PENDING)
+
+  user      User?     @relation(fields: [userId], references: [id])
+  doctor    Doctor?   @relation(fields: [doctorId], references: [id])
+  treatment Treatment @relation(fields: [treatmentId], references: [id])
+
+  messages      ConsultationMessage[]
+  notifications Notification[]
+
+  @@index([userId])
   @@index([treatmentId])
   @@index([doctorId])
   @@index([status])
   @@index([createdAt])
   @@map("consultation_inquiries")
+}
+
+model ConsultationMessage {
+  id             String                    @id @default(cuid())
+  consultationId String
+  userId         String?
+  doctorId       String?
+
+  senderType ConsultationMessageSender
+
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  consultation ConsultationInquiry @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  user         User?               @relation(fields: [userId], references: [id])
+  doctor       Doctor?             @relation(fields: [doctorId], references: [id])
+
+  @@index([consultationId, createdAt])
+  @@index([userId])
+  @@index([doctorId])
+  @@map("consultation_messages")
 }
 
 model Treatment {
@@ -144,6 +177,7 @@ model Doctor {
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
   imagePublicId  String?
+
   appointments   Appointment[]
   slots          AvailableSlot[]
   consultations  ConsultationInquiry[]
@@ -151,6 +185,8 @@ model Doctor {
   schedule       DoctorSchedule?
   user           User?                 @relation(fields: [userId], references: [id])
   notifications  Notification[]
+
+  consultationMessages ConsultationMessage[]
 
   @@map("doctors")
 }
@@ -229,18 +265,23 @@ model Notification {
   userId        String?
   doctorId      String?
   appointmentId String?
-  type          NotificationType
-  title         String
-  message       String
-  isRead        Boolean          @default(false)
-  createdAt     DateTime         @default(now())
-  appointment   Appointment?     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  doctor        Doctor?          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  user          User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultationId String?
+
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  appointment  Appointment?        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  consultation ConsultationInquiry? @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  doctor       Doctor?             @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  user         User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
   @@index([doctorId, isRead])
   @@index([appointmentId])
+  @@index([consultationId])
   @@index([createdAt])
   @@map("notifications")
 }
@@ -509,6 +550,10 @@ enum NotificationType {
   APPOINTMENT_REMINDER
   MEETING_READY
   MEETING_STARTED
+
+  CONSULTATION_ASSIGNED
+  CONSULTATION_RESPONSE
+
   SYSTEM
 }
 
@@ -564,4 +609,9 @@ enum PaymentStatus {
   CANCELLED
   REFUNDED
   EXPIRED
+}
+
+enum ConsultationMessageSender {
+  USER
+  DOCTOR
 }

@@ -1,12 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/src/lib/auth';
-import { prisma } from '@/src/lib/prisma';
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+import { requireAdmin } from "@/src/lib/auth";
+import { prisma } from "@/src/lib/prisma";
 
 type Params = {
   params: Promise<{
     id: string;
   }>;
 };
+
+const validStatuses = [
+  "PENDING",
+  "ASSIGNED",
+  "IN_REVIEW",
+  "CONTACTED",
+  "APPOINTMENT_CREATED",
+  "COMPLETED",
+  "REJECTED",
+] as const;
 
 export async function PATCH(
   request: NextRequest,
@@ -29,30 +42,42 @@ export async function PATCH(
         where: {
           id,
         },
+        select: {
+          id: true,
+          doctorId: true,
+          status: true,
+          treatment: {
+            select: {
+              name: true,
+            },
+          },
+        },
       });
 
     if (!inquiry) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Consultation not found',
+          message: "Consultation not found",
         },
         { status: 404 }
       );
     }
+
+    let assignedDoctor = null;
 
     if (doctorId !== undefined) {
       if (!doctorId) {
         return NextResponse.json(
           {
             success: false,
-            message: 'Doctor ID is required',
+            message: "Doctor ID is required",
           },
           { status: 400 }
         );
       }
 
-      const doctor =
+      assignedDoctor =
         await prisma.doctor.findFirst({
           where: {
             id: doctorId,
@@ -64,26 +89,16 @@ export async function PATCH(
           },
         });
 
-      if (!doctor) {
+      if (!assignedDoctor) {
         return NextResponse.json(
           {
             success: false,
-            message: 'Active doctor not found',
+            message: "Active doctor not found",
           },
           { status: 404 }
         );
       }
     }
-
-    const validStatuses = [
-      'PENDING',
-      'ASSIGNED',
-      'IN_REVIEW',
-      'CONTACTED',
-      'APPOINTMENT_CREATED',
-      'COMPLETED',
-      'REJECTED',
-    ];
 
     if (
       status !== undefined &&
@@ -92,11 +107,20 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid consultation status',
+          message: "Invalid consultation status",
         },
         { status: 400 }
       );
     }
+
+    const isNewDoctorAssignment =
+      doctorId !== undefined &&
+      doctorId !== inquiry.doctorId;
+
+    const nextStatus =
+      doctorId !== undefined
+        ? status ?? "ASSIGNED"
+        : status;
 
     const updated =
       await prisma.consultationInquiry.update({
@@ -106,11 +130,10 @@ export async function PATCH(
         data: {
           ...(doctorId !== undefined && {
             doctorId,
-            status: status ?? 'ASSIGNED',
           }),
 
-          ...(status !== undefined && {
-            status,
+          ...(nextStatus !== undefined && {
+            status: nextStatus,
           }),
         },
         include: {
@@ -130,30 +153,31 @@ export async function PATCH(
         },
       });
 
-    // Create notification when doctor is assigned
-    if (doctorId) {
+    if (
+      isNewDoctorAssignment &&
+      assignedDoctor
+    ) {
       await prisma.notification.create({
         data: {
-          doctorId,
-          appointmentId: null,
-          type: 'SYSTEM',
-          title: 'New Consultation Request',
-          message: `A new ${updated.treatment.name} consultation has been assigned to you.`,
+          doctorId: assignedDoctor.id,
+          consultationId: inquiry.id,
+          type: "CONSULTATION_ASSIGNED",
+          title: "New Consultation Request",
+          message: `A new ${inquiry.treatment.name} consultation has been assigned to you.`,
         },
       });
     }
 
     return NextResponse.json({
       success: true,
-      message:
-        doctorId
-          ? 'Doctor assigned successfully'
-          : 'Consultation updated successfully',
+      message: isNewDoctorAssignment
+        ? "Doctor assigned successfully"
+        : "Consultation updated successfully",
       consultation: updated,
     });
   } catch (error) {
     console.error(
-      'Admin consultation update error:',
+      "Admin consultation update error:",
       error
     );
 
@@ -161,7 +185,7 @@ export async function PATCH(
       {
         success: false,
         message:
-          'Failed to update consultation',
+          "Failed to update consultation",
       },
       { status: 500 }
     );

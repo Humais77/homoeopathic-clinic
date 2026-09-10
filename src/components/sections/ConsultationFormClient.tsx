@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { CONSULTATION } from '@/src/lib/constants';
-
+import { useAuth } from "@/src/context/AuthContext";
 interface Treatment {
   id: string;
   name: string;
 }
 
 export function ConsultationFormClient() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -65,53 +66,62 @@ export function ConsultationFormClient() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (
+  e: React.FormEvent
+) => {
+  e.preventDefault();
 
-    setSubmitting(true);
-    setError('');
-    setSuccess(false);
+  setSubmitting(true);
+  setError("");
+  setSuccess(false);
 
-    try {
-      const response = await fetch('/api/consultation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+  try {
+    const endpoint = user
+      ? "/api/user/consultations"
+      : "/api/consultation";
 
-      const data = await response.json();
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(formData),
+    });
 
-      if (!response.ok) {
-        throw new Error(
-          data.error || 'Failed to submit consultation'
-        );
-      }
+    const data = await response.json();
 
-      setSuccess(true);
-
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        treatmentId: '',
-        message: '',
-      });
-
-      setTimeout(() => {
-        setSuccess(false);
-      }, 5000);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong'
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          data.error ||
+          "Failed to submit consultation"
       );
-    } finally {
-      setSubmitting(false);
     }
-  };
+
+    setSuccess(true);
+
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      treatmentId: "",
+      message: "",
+    });
+
+    setTimeout(() => {
+      setSuccess(false);
+    }, 5000);
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong"
+    );
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <div className="w-full rounded-[20px] bg-[#43aa48] p-7 shadow-sm sm:rounded-[22px] sm:p-8 md:p-9 lg:p-10">
