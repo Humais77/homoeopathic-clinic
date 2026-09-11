@@ -1,62 +1,136 @@
-'use client';
+"use client";
 
-import { TESTIMONIALS } from '@/src/lib/constants';
-import { cn } from '@/src/lib/utils';
-import { Star } from 'lucide-react';
+import { useEffect, useState } from "react";
+
+type Testimonial = {
+  id: string;
+  rating: number;
+  feedback: string;
+  createdAt: string;
+  user: {
+    name: string;
+  };
+};
 
 export function TestimonialsClient() {
+  const [testimonials, setTestimonials] =
+    useState<Testimonial[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  useEffect(() => {
+    async function loadTestimonials() {
+      try {
+        const response = await fetch(
+          "/api/testimonials",
+          {
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Unable to load testimonials."
+          );
+        }
+
+        const data = await response.json();
+
+        setTestimonials(
+          data.testimonials || []
+        );
+      } catch (error) {
+        console.error(
+          "Testimonials error:",
+          error
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTestimonials();
+  }, []);
+
+  if (
+    !loading &&
+    testimonials.length === 0
+  ) {
+    return null;
+  }
+
   return (
-    <section className="py-16 md:py-20 bg-white">
-      <div className="container mx-auto px-4 max-w-7xl">
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#10185C]  mb-4">
-            {TESTIMONIALS.title}
+    <section className="bg-white py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#3da449]">
+            Patient Experiences
+          </p>
+
+          <h2 className="mt-2 text-3xl font-bold text-[#10105c] sm:text-4xl">
+            What Our Patients Say
           </h2>
-          <p className="text-lg text-gray-600">
-            {TESTIMONIALS.subtitle}
+
+          <p className="mt-4 text-gray-600">
+            Hear from patients who have experienced
+            our care.
           </p>
         </div>
 
-        {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {TESTIMONIALS.testimonials.map((testimonial) => (
-            <div
-              key={testimonial.id}
-              className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-            >
-              {/* Star Rating */}
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, index) => (
-                  <Star
-                    key={index}
-                    className={cn(
-                      "w-5 h-5 fill-current",
-                      index < testimonial.rating
-                        ? "text-yellow-400"
-                        : "text-gray-300"
+        {loading ? (
+          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="h-52 animate-pulse rounded-2xl bg-gray-100"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {testimonials
+              .slice(0, 6)
+              .map((testimonial) => (
+                <article
+                  key={testimonial.id}
+                  className="rounded-2xl border border-gray-100 bg-gray-50 p-6 shadow-sm"
+                >
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map(
+                      (star) => (
+                        <span
+                          key={star}
+                          className={
+                            star <=
+                            testimonial.rating
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                          }
+                        >
+                          ★
+                        </span>
+                      )
                     )}
-                  />
-                ))}
-              </div>
+                  </div>
 
-              {/* Testimonial Content */}
-              <p className="text-gray-700 text-base leading-relaxed mb-6">
-                "{testimonial.content}"
-              </p>
+                  <p className="mt-4 text-gray-700">
+                    “{testimonial.feedback}”
+                  </p>
 
-              {/* Client Info */}
-              <div>
-                <p className="font-semibold text-gray-900">
-                  {testimonial.name}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {testimonial.role}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+                  <div className="mt-6 border-t border-gray-200 pt-4">
+                    <p className="font-semibold text-gray-900">
+                      {testimonial.user.name}
+                    </p>
+
+                    <p className="mt-1 text-xs font-medium text-green-600">
+                      Verified Patient
+                    </p>
+                  </div>
+                </article>
+              ))}
+          </div>
+        )}
       </div>
     </section>
   );

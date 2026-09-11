@@ -36,6 +36,7 @@ model User {
   notifications               Notification[]
   payments                    Payment[]
   treatments                  Treatment[]
+  testimonials                Testimonial[]
   whatsappMessages            WhatsAppMessage[]
 
   @@index([status])
@@ -203,6 +204,7 @@ model Appointment {
   slot               AvailableSlot?    @relation(fields: [slotId], references: [id])
   user               User?             @relation(fields: [userId], references: [id])
   meeting            Meeting?
+  testimonial        Testimonial?
   notifications      Notification[]
   payment            Payment?
   whatsappMessages   WhatsAppMessage[]
@@ -261,6 +263,32 @@ model Notification {
   @@index([consultationId])
   @@index([createdAt])
   @@map("notifications")
+}
+
+model Testimonial {
+  id            String @id @default(cuid())
+  userId        String
+  appointmentId String @unique
+
+  rating   Int
+  feedback String
+
+  status TestimonialStatus @default(PENDING)
+
+  adminNote    String?
+  reviewedAt   DateTime?
+  reviewedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("testimonials")
 }
 
 model Blog {
@@ -569,4 +597,10 @@ enum PaymentStatus {
 enum ConsultationMessageSender {
   USER
   DOCTOR
+}
+
+enum TestimonialStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
 }

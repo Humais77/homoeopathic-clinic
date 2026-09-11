@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/context/AuthContext";
 import { AppointmentCard } from "@/src/components/dashboard/AppointmentCard";
+import { TestimonialForm } from "@/src/components/dashboard/TestimonialForm";
 import Link from "next/link";
 
 type Meeting = {
@@ -22,6 +23,16 @@ type Meeting = {
   externalMeetingId: string | null;
 };
 
+type Testimonial = {
+  id: string;
+  rating: number;
+  feedback: string;
+  status:
+    | "PENDING"
+    | "PUBLISHED"
+    | "REJECTED";
+  createdAt: string;
+};
 type Appointment = {
   id: string;
   name: string;
@@ -45,6 +56,7 @@ type Appointment = {
   };
 
   meeting: Meeting | null;
+  testimonial?: Testimonial | null;
 };
 export default function UserDashboardPage() {
   const router = useRouter();

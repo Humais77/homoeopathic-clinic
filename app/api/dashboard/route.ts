@@ -7,38 +7,42 @@ export async function GET() {
     await requireAdmin();
 
     const [
-      appointments,
-      consultations,
-      doctors,
-      services,
-      blogs,
-      pharmacies,
-    ] = await Promise.all([
-      prisma.appointment.count(),
+  appointments,
+  consultations,
+  doctors,
+  services,
+  blogs,
+  pharmacies,
+  testimonials,
+] = await Promise.all([
+  prisma.appointment.count(),
 
-      prisma.consultationInquiry.count(),
+  prisma.consultationInquiry.count(),
 
-      prisma.doctor.count(),
+  prisma.doctor.count(),
 
-      prisma.treatment.count(),
+  prisma.treatment.count(),
 
-      prisma.blog.count({
-        where: {
-          status: "PUBLISHED",
-        },
-      }),
+  prisma.blog.count({
+    where: {
+      status: "PUBLISHED",
+    },
+  }),
 
-      prisma.pharmacy.count(),
-    ]);
+  prisma.pharmacy.count(),
+
+  prisma.testimonial.count(),
+]);
 
     return NextResponse.json({
-      appointments,
-      consultations,
-      doctors,
-      services,
-      blogs,
-      pharmacies,
-    });
+  appointments,
+  consultations,
+  doctors,
+  services,
+  blogs,
+  pharmacies,
+  testimonials,
+});
   } catch (error) {
     console.error(
       "Dashboard error:",

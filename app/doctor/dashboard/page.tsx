@@ -97,6 +97,32 @@ type Treatment = {
   createdAt: string;
   updatedAt: string;
 };
+
+type Testimonial = {
+  id: string;
+  rating: number;
+  feedback: string;
+  status: "PENDING" | "PUBLISHED" | "REJECTED";
+  createdAt: string;
+  updatedAt: string;
+
+  user: {
+    id: string;
+    name: string;
+  };
+
+  appointment: {
+    id: string;
+    appointmentDate: string;
+    appointmentTime: string;
+    status: string;
+
+    doctor: {
+      id: string;
+      name: string;
+    };
+  };
+};
 type ConsultationStatus =
   | 'PENDING'
   | 'ASSIGNED'
@@ -128,6 +154,8 @@ type DashboardData = {
 
   notifications?: unknown[];
 
+  testimonials: Testimonial[];
+
   stats: {
     totalAppointments: number;
     pendingAppointments: number;
@@ -137,6 +165,10 @@ type DashboardData = {
     totalConsultations: number;
     pendingConsultations: number;
     completedConsultations: number;
+
+    totalTestimonials: number;
+  publishedTestimonials: number;
+  pendingTestimonials: number;
   };
 };
 
@@ -1178,6 +1210,113 @@ const [treatmentsLoading, setTreatmentsLoading] = useState(true);
           </div>
 
         </div>
+
+        {/* Patient Feedback */}
+<div className="mt-8 rounded-2xl bg-white shadow-sm">
+  <div className="border-b border-gray-100 p-6">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Patient Feedback
+        </h2>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Feedback submitted by patients after completing
+          appointments with you.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+          Total: {data.stats.totalTestimonials}
+        </span>
+
+        <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
+          Pending: {data.stats.pendingTestimonials}
+        </span>
+
+        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+          Published: {data.stats.publishedTestimonials}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div className="p-6">
+    {data.testimonials.length === 0 ? (
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center">
+        <h3 className="font-semibold text-gray-900">
+          No patient feedback yet
+        </h3>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Patient feedback will appear here after completed
+          appointments.
+        </p>
+      </div>
+    ) : (
+      <div className="grid gap-5 md:grid-cols-2">
+        {data.testimonials.map((testimonial) => (
+          <div
+            key={testimonial.id}
+            className="rounded-xl border border-gray-100 bg-white p-5"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">
+                  {testimonial.user.name}
+                </h3>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Appointment:{" "}
+                  {new Date(
+                    testimonial.appointment.appointmentDate
+                  ).toLocaleDateString()}
+                </p>
+              </div>
+
+              <span
+                className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium ${
+                  testimonial.status === "PUBLISHED"
+                    ? "bg-green-100 text-green-700"
+                    : testimonial.status === "REJECTED"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                }`}
+              >
+                {testimonial.status === "PUBLISHED"
+                  ? "Published"
+                  : testimonial.status === "REJECTED"
+                    ? "Rejected"
+                    : "Pending Review"}
+              </span>
+            </div>
+
+            <div className="mt-4 text-lg text-yellow-400">
+              {"★".repeat(testimonial.rating)}
+              <span className="text-gray-300">
+                {"★".repeat(5 - testimonial.rating)}
+              </span>
+            </div>
+
+            <p className="mt-3 text-sm leading-relaxed text-gray-600">
+              "{testimonial.feedback}"
+            </p>
+
+            <div className="mt-4 border-t border-gray-100 pt-3">
+              <p className="text-xs text-gray-400">
+                Submitted{" "}
+                {new Date(
+                  testimonial.createdAt
+                ).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
 
       </div>
     </div>
