@@ -17,6 +17,7 @@ export default function AdminDashboardPage() {
   } = useAuth();
 
   const [stats, setStats] = useState({
+    users: 0,
     appointments: 0,
     consultations: 0,
     doctors: 0,
@@ -63,6 +64,7 @@ export default function AdminDashboardPage() {
       const data = await response.json();
 
       setStats({
+        users: data.users ?? 0,
         appointments: data.appointments ?? 0,
         consultations: data.consultations ?? 0,
         doctors: data.doctors ?? 0,
@@ -90,6 +92,27 @@ export default function AdminDashboardPage() {
   }
 
   const statCards = [
+    {
+  title: "Users",
+  value: stats.users,
+  description: "Registered accounts",
+  href: "/admin/users",
+  icon: (
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m6-10a4 4 0 100-8 4 4 0 000 8zm10 1v6m-3-3h6"
+      />
+    </svg>
+  ),
+},
     {
       title: "Appointments",
       value: stats.appointments,
@@ -240,6 +263,27 @@ export default function AdminDashboardPage() {
   ];
 
   const managementLinks = [
+    {
+  title: "Users",
+  description:
+    "Manage patient, doctor and administrator accounts.",
+  href: "/admin/users",
+  icon: (
+    <svg
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m6-10a4 4 0 100-8 4 4 0 000 8zm10 1v6m-3-3h6"
+      />
+    </svg>
+  ),
+},
     {
       title: "Appointments",
       description: "Manage patient bookings and appointment status.",
@@ -506,7 +550,7 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
             {statCards.map((stat) => (
               <Link
                 key={stat.title}

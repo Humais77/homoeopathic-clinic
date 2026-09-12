@@ -3,19 +3,71 @@ import { requireAdmin } from "@/src/lib/auth";
 import { prisma } from "@/src/lib/prisma";
 
 export async function GET() {
-  const doctors = await prisma.doctor.findMany({
-    where: {
-      isActive: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+  try {
+    await requireAdmin();
 
-  return NextResponse.json({
-    success: true,
-    doctors,
-  });
+    const doctors =
+      await prisma.doctor.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              status: true,
+            },
+          },
+        },
+      });
+
+    return NextResponse.json({
+      success: true,
+      doctors,
+    });
+  } catch (error) {
+    console.error(
+      "Admin doctors GET error:",
+      error
+    );
+
+    if (
+      error instanceof Error &&
+      error.message === "Unauthorized"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        { status: 401 }
+      );
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "Forbidden"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Forbidden",
+        },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to fetch doctors",
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(

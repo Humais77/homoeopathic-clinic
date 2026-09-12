@@ -7,6 +7,7 @@ export async function GET() {
     await requireAdmin();
 
     const [
+      users,
   appointments,
   consultations,
   doctors,
@@ -15,6 +16,7 @@ export async function GET() {
   pharmacies,
   testimonials,
 ] = await Promise.all([
+  prisma.user.count(),
   prisma.appointment.count(),
 
   prisma.consultationInquiry.count(),
@@ -35,6 +37,7 @@ export async function GET() {
 ]);
 
     return NextResponse.json({
+      users,
   appointments,
   consultations,
   doctors,
